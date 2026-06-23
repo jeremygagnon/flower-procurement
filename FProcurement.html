@@ -139,6 +139,10 @@ tbody tr:hover{background:var(--panel-2);}
 .v-review{color:var(--amber);background:color-mix(in srgb,var(--amber) 14%,transparent);}
 .v-fail{color:var(--coral);background:color-mix(in srgb,var(--coral) 15%,transparent);}
 .v-await{color:var(--lav);background:color-mix(in srgb,var(--lav) 14%,transparent);}
+.age-fresh{color:var(--teal-bright);background:color-mix(in srgb,var(--teal) 15%,transparent);}
+.age-mid{color:var(--amber);background:color-mix(in srgb,var(--amber) 16%,transparent);}
+.age-old{color:var(--coral);background:color-mix(in srgb,var(--coral) 16%,transparent);}
+.age-flag{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:500;line-height:1.6;padding:0 6px;border-radius:6px;vertical-align:middle;white-space:nowrap;}
 .cell-flag{color:var(--coral);} .cell-ok{color:var(--ink);}
 
 /* flower procurement schedule */
@@ -263,9 +267,14 @@ tbody tr:hover{background:var(--panel-2);}
 .coa-status{display:block;font-family:var(--mono);font-size:10px;margin-top:5px;color:var(--muted);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .coa-status.ok{color:var(--teal-bright);} .coa-status.warn{color:var(--amber);} .coa-status.err{color:var(--coral);}
 .coa-cell{white-space:nowrap;}
-.coa-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:8px;padding:6px 10px;cursor:pointer;text-decoration:none;transition:filter .14s;}
-.coa-link:hover{filter:brightness(1.08);}
-.coa-link svg{width:13px;height:13px;}
+.coa-link{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12.5px;font-weight:700;color:#fff;background:var(--accent);border:1px solid var(--accent);border-radius:9px;padding:8px 13px;cursor:pointer;text-decoration:none;box-shadow:0 2px 12px color-mix(in srgb,var(--accent) 32%,transparent);transition:filter .14s,transform .14s,box-shadow .14s;}
+.coa-link:hover{filter:brightness(1.07);transform:translateY(-1px);}
+.coa-link svg{width:14px;height:14px;}
+.coa-none-tag{color:var(--muted);}
+.coa-add{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:9px;padding:8px 13px;cursor:pointer;transition:background .14s,color .14s,transform .14s;}
+.coa-add:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-1px);}
+.coa-add svg{width:14px;height:14px;}
+.coa-add.busy{opacity:.6;pointer-events:none;}
 .coa-replace{margin-left:6px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:13px;vertical-align:middle;transition:color .14s,border-color .14s;}
 .coa-replace:hover{color:var(--accent);border-color:var(--accent);}
 .coa-tip{position:fixed;z-index:200;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.35);padding:10px 12px;min-width:168px;pointer-events:none;font-family:var(--font);}
@@ -333,12 +342,13 @@ tbody tr:hover{background:var(--panel-2);}
 .back{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;margin-bottom:14px;}
 .back:hover{color:var(--accent);}
 /* lot-detail header: highlighted meta tags + compact verdict pill */
-.lot-head{align-items:flex-start;}
+.lot-head{align-items:center;}
 .lot-head-l{flex:1;min-width:0;}
-.lot-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px;}
+.lot-tags{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:13px;}
+.coa-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;margin:-8px 0 20px;}
 .lot-tag{display:inline-flex;align-items:baseline;gap:7px;font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:6px 11px;}
 .lot-tag i{font-style:normal;font-size:9px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);}
-.lot-head-r{display:flex;flex-direction:column;align-items:flex-end;gap:11px;flex-shrink:0;margin-left:auto;}
+.lot-status{margin-left:auto;display:inline-flex;align-items:center;gap:10px;}
 .verdict-pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:0.02em;padding:8px 15px;border-radius:999px;border:1px solid;white-space:nowrap;cursor:default;}
 .verdict-pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0;}
 .vb-pass{color:var(--teal-bright);border-color:color-mix(in srgb,var(--teal) 42%,transparent);background:color-mix(in srgb,var(--teal) 13%,transparent);}
@@ -761,24 +771,30 @@ function showPage(p){
   if(p==='specs')wireSpecs();
   if(p.slice(0,5)==='type:')wireType();
   if(p==='library')wireLibrary();
+  if(p.slice(0,4)==='lot:')wireLot();
   window.scrollTo(0,0);
 }
 
 function buildHome(){
   const out=LOTS.filter(l=>!l.approval);
-  let h=`<div class="page-head home-head"><div></div>
+  let h=`<div class="page-head home-head"><div><h2>Samples</h2></div>
     <button class="btn-primary" id="addHomeSample">${I.add}Add sample</button></div>`;
   const top=out.slice(0,6);
-  const rows=top.map(l=>`<tr data-lot="${esc(l.id)}">
+  const rows=top.map(l=>{const f=verdict(l).metrics.reduce((a,m)=>{a[m.key]=m.s;return a;},{});
+    return `<tr data-lot="${esc(l.id)}">
     <td class="l"><div class="strain">${esc(l.strain)}<span class="s2">${esc(l.id)}</span></div></td>
     <td class="l"><span class="catdot"><span class="dot" style="background:${PCOLOR[l.ptype]||'var(--muted)'}"></span>${esc(PSHORT[l.ptype]||l.ptype)}</span></td>
     <td class="l">${esc(l.supplier)}</td>
+    <td class="l">${ageBadge(l)||'—'}</td>
+    <td class="${f.thc==='fail'||f.thc==='review'?'cell-flag':'cell-ok'}">${num(l.thc)}${l.thc!=null?'%':''}</td>
+    <td class="${f.moisture==='fail'?'cell-flag':''}">${num(l.moisture)}${l.moisture!=null?'%':''}</td>
+    <td class="${l.micro==='fail'?'cell-flag':''}">${l.micro?(l.micro==='pass'?'Pass':'Fail'):'—'}</td>
     <td class="l">${chip(l)}</td>
     <td class="l">${apprCell(l)}</td>
-  </tr>`).join('');
+  </tr>`;}).join('');
   h+=`<div class="panel">
     <div class="panel-head"><div class="ph-t"><span class="dot" style="background:var(--accent)"></span>Outstanding samples</div><div class="ph-meta">${out.length} awaiting a decision</div></div>
-    ${out.length?`<table><thead><tr><th class="l">Lot / strain</th><th class="l">Category</th><th class="l">Supplier</th><th class="l">Verdict</th><th class="l">Decision</th></tr></thead><tbody>${rows}</tbody></table>${out.length>top.length?`<div class="home-more" data-go="library">View all ${out.length} outstanding samples →</div>`:''}`:`<div class="empty">Nothing waiting on you — every sample has been approved or rejected. Use <b>Add sample</b> to log a new one.</div>`}
+    ${out.length?`<table><thead><tr><th class="l">Lot / strain</th><th class="l">Category</th><th class="l">Supplier</th><th class="l">CoA age</th><th>Total THC</th><th>Moisture</th><th>Micro</th><th class="l">Verdict</th><th class="l">Decision</th></tr></thead><tbody>${rows}</tbody></table>${out.length>top.length?`<div class="home-more" data-go="library">View all ${out.length} outstanding samples →</div>`:''}`:`<div class="empty">Nothing waiting on you — every sample has been approved or rejected. Use <b>Add sample</b> to log a new one.</div>`}
   </div>`;
   return h;
 }
@@ -812,12 +828,13 @@ function libBody(){
     return `<div class="panel${isCol?' collapsed':''}">
       <div class="panel-head" data-sup-panel="${esc(s)}"><div class="ph-t"><svg class="chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg><span class="dot" style="background:var(--accent)"></span>${esc(s)}</div><div class="ph-meta">${ls.length} lot${ls.length>1?'s':''}</div></div>
       <table><thead><tr>
-        <th class="l">Lot / strain</th><th class="l">Category</th><th>Total THC</th><th>CBD</th><th>Moisture</th><th>Micro</th><th class="l">Verdict</th><th class="l">Status</th>
+        <th class="l">Lot / strain</th><th class="l">Category</th><th class="l">CoA age</th><th>Total THC</th><th>CBD</th><th>Moisture</th><th>Micro</th><th class="l">Verdict</th><th class="l">Status</th>
       </tr></thead><tbody>
       ${ls.map(l=>{const f=verdict(l).metrics.reduce((a,m)=>{a[m.key]=m.s;return a;},{});
         return `<tr data-lot="${esc(l.id)}">
         <td class="l"><div class="strain">${esc(l.strain)}<span class="s2">${esc(l.id)}</span></div></td>
         <td class="l"><span class="catdot"><span class="dot" style="background:${PCOLOR[l.ptype]||'var(--muted)'}"></span>${esc(PSHORT[l.ptype]||l.ptype)}</span></td>
+        <td class="l">${ageBadge(l)||'—'}</td>
         <td class="${f.thc==='fail'||f.thc==='review'?'cell-flag':'cell-ok'}">${num(l.thc)}${l.thc!=null?'%':''}</td>
         <td>${num(l.cbd,2)}${l.cbd!=null?'%':''}</td>
         <td class="${f.moisture==='fail'?'cell-flag':''}">${num(l.moisture)}${l.moisture!=null?'%':''}</td>
@@ -834,18 +851,12 @@ function buildLot(id){
   const l=LOTS.find(x=>x.id===id); if(!l)return `<div class="empty">Lot not found.</div>`;
   const v=verdict(l);
   const aw=l.status==='awaiting';
-  let h=`<div class="back" data-go="${esc(lotFrom||'library')}">← Back</div>`;
-  const tag=(k,val)=>val?`<span class="lot-tag"><i>${esc(k)}</i>${esc(val)}</span>`:'';
-  const tags=[
-    tag('Supplier',l.supplier),
-    tag('Lot',l.id),
-    tag('Category',l.ptype),
-    aw?tag('Logged',l.received):tag('Lab',l.lab),
-    aw?'':tag('Received',l.received),
-  ].join('');
-  h+=`<div class="page-head lot-head"><div class="lot-head-l"><h2>${esc(l.strain)}</h2><div class="lot-tags">${tags}</div></div>`+
-    `<div class="lot-head-r"><span class="verdict-pill vb-${v.overall}"${v.reasons.length?` title="${esc(v.reasons.join(' · '))}"`:''}>${esc(v.label)}</span>`+
-    `${aw?'':`<div class="lot-appr">${apprCell(l)}</div>`}</div></div>`;
+  const ageMo=coaAgeMonths(l), ageTier=ageMo!=null?coaAgeTier(ageMo):null;
+  let h=`<div class="back" data-go="${esc(lotFrom||'library')}">← Back</div><input type="file" id="lotPdfInput" accept="application/pdf" multiple style="display:none">`;
+  const coaInline=`${coaLinksHtml(l)||`<span class="lot-tag coa-none-tag"><i>CoA</i>No PDF</span>`}<button type="button" class="coa-add" data-coa-add="${esc(l.id)}" title="Attach more CoA PDFs to this sample">${I.add}Add PDF</button>`;
+  const verdictPill=`<span class="verdict-pill vb-${v.overall}"${v.reasons.length?` title="${esc(v.reasons.join(' · '))}"`:''}>${esc(v.label)}</span>`;
+  const statusEl=aw?verdictPill:`${verdictPill}<div class="lot-appr">${apprCell(l)}</div>`;
+  h+=`<div class="page-head lot-head"><div class="lot-head-l"><h2>${esc(l.strain)}</h2></div><span class="lot-status">${statusEl}</span></div>`;
   if(l.status==='awaiting')return h+`<div class="det-grid"><div class="panel"><div class="panel-head"><div class="ph-t">Sample details</div><div class="ph-meta">awaiting CoA</div></div><div style="padding:6px 16px 14px">
     <div class="kv"><span class="k">Vendor</span><span class="v">${esc(l.supplier)}</span></div>
     <div class="kv"><span class="k">Cultivar</span><span class="v">${esc(l.strain)}</span></div>
@@ -853,13 +864,19 @@ function buildLot(id){
     <div class="kv"><span class="k">Flower type</span><span class="v">${esc(l.ptype)}</span></div>
     <div class="kv"><span class="k">Quantity</span><span class="v">${l.qty!=null?num(l.qty,0)+' g':'—'}</span></div>
     <div class="kv"><span class="k">Price</span><span class="v">$${num(l.price,2)}/g</span></div>
-    ${coaLinksHtml(l)?`<div class="kv"><span class="k">CoA</span><span class="v">${coaLinksHtml(l)}</span></div>`:''}
   </div></div>
-  <div class="panel"><div class="panel-head"><div class="ph-t">Next step</div></div><div style="padding:6px 16px 14px"><div class="empty" style="padding:18px 6px">The certificate hasn't been uploaded yet. Lab results for this <b>${esc(PSHORT[l.ptype]||l.ptype)}</b> lot will be recorded once the sample arrives and its CoA is reviewed.</div></div></div></div>`;
+  <div class="panel"><div class="panel-head"><div class="ph-t">Next step</div></div><div style="padding:6px 16px 14px"><div class="empty" style="padding:18px 6px">The certificate hasn't been uploaded yet. Lab results for this <b>${esc(PSHORT[l.ptype]||l.ptype)}</b> lot will be recorded once the sample arrives and its CoA is reviewed.</div></div></div></div><div class="coa-row">${coaInline}</div>`;
+  // sample identity (relocated from the header tag boxes)
+  const receivedCell=`${esc(l.received)}${ageMo!=null?` <span class="age-flag age-${ageTier}" title="CoA received ${esc(l.received)} — ${ageMonthsAgo(ageMo)}">${ageMonthsShort(ageMo)} old</span>`:''}`;
+  const idCols=[['Supplier',l.supplier],['Lot',l.id],['Category',l.ptype],['Lab',l.lab],['Received',l.received]];
+  h+=`<div class="panel"><div class="panel-head"><div class="ph-t">Sample</div></div>
+    <table><thead><tr>${idCols.map(([k])=>`<th class="l">${k}</th>`).join('')}</tr></thead>
+    <tbody><tr style="cursor:default">${idCols.map(([k,val])=>`<td class="l" style="font-family:var(--mono)">${k==='Received'?receivedCell:esc(val!=null&&val!==''?String(val):'—')}</td>`).join('')}</tr></tbody></table></div>
+    <div class="coa-row">${coaInline}</div>`;
   // spec scorecard
   h+=`<div class="panel"><div class="panel-head"><div class="ph-t">Spec scorecard</div><div class="ph-meta">vs. ${esc(l.ptype)} spec</div></div>
     <table><thead><tr><th class="l">Parameter</th><th>Result</th><th class="l">Status</th></tr></thead><tbody>
-    ${v.metrics.map(m=>`<tr style="cursor:default"><td class="l" style="font-family:var(--mono)">${esc(m.label)}</td>
+    ${v.metrics.map(m=>`<tr style="cursor:default"><td class="l">${esc(m.label)}</td>
       <td>${m.val==null?'—':(typeof m.val==='string'?(m.val==='pass'?'Pass':'Fail'):num(m.val,m.unit==='aw'?2:m.key==='cbd'?2:1)+(m.unit==='%'?'%':m.unit==='aw'?' aw':''))}</td>
       <td class="l"><span class="chip ${VC[m.s]}">${m.s==='pass'?'Pass':m.s==='review'?'Review':'Fail'}</span></td></tr>`).join('')}
     </tbody></table></div>`;
@@ -893,8 +910,7 @@ function buildLot(id){
       <div class="kv"><span class="k">Buy price</span><span class="v">$${num(l.price,2)}/g</span></div>
       <div class="kv"><span class="k">Lab</span><span class="v">${esc(l.lab)}</span></div>
       ${l.batch?`<div class="kv"><span class="k">Production batch</span><span class="v">${esc(l.batch)}</span></div>`:''}
-      <div class="kv"><span class="k">Received</span><span class="v">${esc(l.received)}</span></div>
-      ${coaLinksHtml(l)?`<div class="kv"><span class="k">CoA</span><span class="v">${coaLinksHtml(l)}</span></div>`:''}
+      <div class="kv"><span class="k">Received</span><span class="v"${ageMo!=null?` style="color:${AGE_VAR[ageTier]}"`:''}>${esc(l.received)}${ageMo!=null?` · ${ageMonthsAgo(ageMo)}`:''}</span></div>
     </div></div>
   </div>`;
   return h;
@@ -908,12 +924,13 @@ function buildDecision(kind){
   let h=`<div class="page-head"><div><h2>${title}</h2></div></div>`;
   if(!ls.length)return h+`<div class="panel"><div class="empty">No ${isAp?'approved':'rejected'} lots yet — use <b>${isAp?'Approve':'Reject'}</b> on a sample in <b>Outstanding Samples</b> or on its detail page.</div></div>`;
   h+=`<div class="panel"><table><thead><tr>
-    <th class="l">Lot / strain</th><th class="l">Supplier</th><th class="l">Category</th><th>Total THC</th><th>Terpenes</th><th>Buy price</th><th class="l">Verdict</th><th class="l">${isAp?'Approved':'Rejected'}</th><th class="l">Decision</th>
+    <th class="l">Lot / strain</th><th class="l">Supplier</th><th class="l">Category</th><th class="l">CoA age</th><th>Total THC</th><th>Terpenes</th><th>Buy price</th><th class="l">Verdict</th><th class="l">${isAp?'Approved':'Rejected'}</th><th class="l">Decision</th>
   </tr></thead><tbody>
   ${ls.map(l=>`<tr data-lot="${esc(l.id)}">
     <td class="l"><div class="strain">${esc(l.strain)}<span class="s2">${esc(l.id)}</span></div></td>
     <td class="l">${esc(l.supplier)}</td>
     <td class="l"><span class="catdot"><span class="dot" style="background:${PCOLOR[l.ptype]||'var(--muted)'}"></span>${esc(PSHORT[l.ptype]||l.ptype)}</span></td>
+    <td class="l">${ageBadge(l)||'—'}</td>
     <td>${num(l.thc)}${l.thc!=null?'%':''}</td>
     <td>${num(l.terps,2)}${l.terps!=null?'%':''}</td>
     <td>$${num(l.price,2)}/g</td>
@@ -944,12 +961,13 @@ function buildType(){
   h+=`<div class="panel">
     <div class="panel-head"><div class="ph-t"><span class="dot" style="background:${PCOLOR[t]}"></span>${esc(PSHORT[t]||t)} samples</div><div class="ph-meta">${n} lot${n>1?'s':''}</div></div>
     <table><thead><tr>
-      <th class="l">Lot / strain</th><th class="l">Supplier</th><th>Total THC</th><th>Moisture</th><th>Micro</th><th class="l">Verdict</th><th class="l">Status</th>
+      <th class="l">Lot / strain</th><th class="l">Supplier</th><th class="l">CoA age</th><th>Total THC</th><th>Moisture</th><th>Micro</th><th class="l">Verdict</th><th class="l">Status</th>
     </tr></thead><tbody>
     ${ls.map(l=>{const f=verdict(l).metrics.reduce((a,m)=>{a[m.key]=m.s;return a;},{});
       return `<tr data-lot="${esc(l.id)}">
       <td class="l"><div class="strain">${esc(l.strain)}<span class="s2">${esc(l.id)}</span></div></td>
       <td class="l">${esc(l.supplier)}</td>
+      <td class="l">${ageBadge(l)||'—'}</td>
       <td class="${f.thc==='fail'||f.thc==='review'?'cell-flag':'cell-ok'}">${num(l.thc)}${l.thc!=null?'%':''}</td>
       <td class="${f.moisture==='fail'?'cell-flag':''}">${num(l.moisture)}${l.moisture!=null?'%':''}</td>
       <td class="${l.micro==='fail'?'cell-flag':''}">${l.micro?(l.micro==='pass'?'Pass':'Fail'):'—'}</td>
@@ -1049,6 +1067,12 @@ function itemHtml(it){
 /* ============================ wiring ============================ */
 function wireHome(){
   {const a=$('#addHomeSample'); if(a)a.addEventListener('click',()=>showPage('intake'));}
+}
+function wireLot(){
+  const input=$('#lotPdfInput'); if(!input)return;
+  const btn=$('#main').querySelector('[data-coa-add]');
+  if(btn)btn.addEventListener('click',()=>input.click());
+  input.addEventListener('change',()=>{const fs=input.files; input.value=''; if(fs&&fs.length)addPdfsToLot(curLot,fs);});
 }
 function wireLibrary(){
   const s=$('#lotSearch'); if(s)s.addEventListener('input',()=>{listFilter=s.value;$('#libBody').innerHTML=libBody();});
@@ -1166,6 +1190,39 @@ async function addCoaFiles(fileList){
     updateLotCount();
   }
 }
+/* Attach one or more extra CoA PDFs to a lot that's already in the library.
+   Parses each PDF and folds any newly-found analytes into the lot (same
+   fill-don't-overwrite rules as intake), then re-renders the sample page. */
+async function addPdfsToLot(id,fileList){
+  const l=LOTS.find(x=>x.id===id); if(!l)return;
+  const all=[...fileList].filter(Boolean);
+  const files=all.filter(f=>/\.pdf$/i.test(f.name||'')||f.type==='application/pdf');
+  if(!files.length){ if(all.length)toast('Only PDF certificates can be parsed'); return; }
+  const btn=$('#main').querySelector('[data-coa-add]'); if(btn){btn.classList.add('busy');btn.textContent='Reading…';}
+  if(!l.coaFiles||!l.coaFiles.length)l.coaFiles=l.coaData?[{name:l.coaName||'coa.pdf',data:l.coaData}]:[];
+  let added=0;
+  for(const file of files){
+    try{
+      const dataUrl=await fileToDataUrl(file);
+      let text=''; try{ text=await extractPdfText(file); }catch(_){}
+      if(text.replace(/\s+/g,'').length<40){ try{ text=await ocrPdf(file); }catch(_){} }
+      let parsed={}; try{ parsed=parseCoa(text); }catch(_){}
+      parsed.coaFiles=[{name:file.name,data:dataUrl}];
+      mergeIntake(l,parsed);   // folds the new PDF + any fresh analytes into the lot
+      added++;
+    }catch(_){}
+  }
+  l.coaName=l.coaName||(l.coaFiles[0]&&l.coaFiles[0].name)||null;
+  l.coaData=l.coaData||(l.coaFiles[0]&&l.coaFiles[0].data)||null;
+  if(l.status==='awaiting'&&(l.coaData||l.thc!=null||l.micro))l.status='received';
+  if(l.status==='received'){
+    if(!l.cann||!l.cann.length)l.cann=cann(l.thc||0,l.cbd||0,ACTIVATED(l.ptype));
+    if(!l.terp||!l.terp.length)l.terp=terp(l.terps||0);
+  }
+  const ok=saveLots();
+  toast(ok?`${added} PDF${added===1?'':'s'} added to this sample`:'Browser storage is full — remove old samples and try again.');
+  showPage('lot:'+id);
+}
 function updateLotCount(){
   const n=intakeItems.filter(it=>it.id&&String(it.id).trim()!=='').length;
   const m=$('#lotCountMeta'); if(m)m.textContent=n+' ready';
@@ -1243,6 +1300,24 @@ function normDate(s){
   if(m=s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/)){const mo=MON[m[2].toLowerCase()];if(mo)return `${m[3]}-${mo}-${m[1].padStart(2,'0')}`;}
   if(m=s.match(/^(\d{1,2})([A-Za-z]{3})(\d{4})$/)){const mo=MON[m[2].toLowerCase()];if(mo)return `${m[3]}-${mo}-${m[1].padStart(2,'0')}`;}
   return null;
+}
+function coaAgeMonths(l){
+  if(!l||l.status==='awaiting')return null;
+  const d=normDate(l.received); if(!d)return null;
+  const then=new Date(d+'T00:00:00'); if(isNaN(then))return null;
+  const now=new Date(); now.setHours(0,0,0,0);
+  let m=(now.getFullYear()-then.getFullYear())*12+(now.getMonth()-then.getMonth());
+  if(now.getDate()<then.getDate())m--; // not a full month elapsed yet
+  return Math.max(0,m);
+}
+// CoA freshness tiers: <3mo green, 3–6mo yellow, >6mo red.
+function coaAgeTier(months){return months<3?'fresh':months<=6?'mid':'old';}
+const AGE_VAR={fresh:'var(--teal-bright)',mid:'var(--amber)',old:'var(--coral)'};
+function ageMonthsShort(m){return m===0?'<1 mo':`${m} mo`;}
+function ageMonthsAgo(m){return m===0?'less than a month ago':`${m} month${m===1?'':'s'} ago`;}
+function ageBadge(l){
+  const m=coaAgeMonths(l); if(m==null)return '';
+  return `<span class="age-flag age-${coaAgeTier(m)}" title="CoA received ${esc(l.received)} — ${ageMonthsAgo(m)}">${ageMonthsShort(m)} old</span>`;
 }
 function microStatus(T){
   const orgs=[/salmonella.{0,30}/i,/(?:escherichia coli|e\.?\s*coli).{0,30}/i,/(?:total aerobic|aerobic (?:microbial|plate)).{0,30}/i,/(?:yeast|mould|mold).{0,40}/i,/bile[\- ]?tolerant.{0,30}/i,/staphylococcus.{0,30}/i,/pseudomonas.{0,30}/i];
