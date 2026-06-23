@@ -70,6 +70,12 @@ a{color:inherit;}
 .nav-item .ni-count{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--faint);}
 .nav-item.active .ni-count{color:var(--accent);}
 .nav-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.nav-sync{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:0.06em;text-align:center;padding:11px 0 0;display:flex;align-items:center;justify-content:center;gap:6px;}
+.nav-sync:empty{display:none;}
+.nav-sync::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--faint);flex-shrink:0;}
+.nav-sync.ok::before{background:#3fb950;}
+.nav-sync.sync::before{background:var(--accent);}
+.nav-sync.err::before{background:#f85149;}
 .nav-ver{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:0.1em;text-align:center;padding:11px 0 2px;}
 .nav-built{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:0.06em;text-align:center;padding:0 0 4px;opacity:.8;}
 
@@ -276,6 +282,8 @@ tbody tr:hover{background:var(--panel-2);}
 .intake-sup label{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);font-weight:500;}
 .intake-sup input{flex:1;min-width:220px;max-width:360px;background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:8px 11px;color:var(--ink);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .14s;}
 .intake-sup input:focus{border-color:var(--accent);}
+.intake-sup select{background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:8px 11px;color:var(--ink);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .14s;cursor:pointer;}
+.intake-sup select:focus{border-color:var(--accent);}
 .btn-ghost{font-family:var(--font);font-weight:600;font-size:13px;border:1px dashed var(--line);background:transparent;color:var(--ink-2);border-radius:9px;padding:0 14px;height:36px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;transition:border-color .14s,color .14s;}
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
 .btn-ghost svg{width:14px;height:14px;}
@@ -340,6 +348,14 @@ tbody tr:hover{background:var(--panel-2);}
 
 .footnote{font-family:var(--mono);font-size:10.5px;color:var(--faint);line-height:1.7;border-top:1px solid var(--line);margin-top:30px;padding-top:16px;}
 .empty{padding:40px 20px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;}
+.home-more{padding:11px 16px;font-family:var(--mono);font-size:11.5px;color:var(--accent);cursor:pointer;border-top:1px solid var(--line);}
+.home-more:hover{background:var(--panel-2);}
+.home-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-top:18px;}
+.home-card{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px;cursor:pointer;transition:border-color .14s,background .14s,transform .14s;}
+.home-card:hover{border-color:var(--accent);background:var(--panel-2);transform:translateY(-1px);}
+.home-card .hc-ico{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);flex-shrink:0;}
+.home-card .hc-t{font-size:14px;font-weight:600;color:var(--ink);}
+.home-card .hc-s{font-size:11px;font-family:var(--mono);color:var(--muted);margin-top:2px;}
 
 @media(max-width:980px){ .kpi-row{grid-template-columns:repeat(2,1fr);} .intake-grid,.det-grid,.spec-grid{grid-template-columns:1fr;} }
 @media(max-width:760px){
@@ -368,7 +384,7 @@ tbody tr:hover{background:var(--panel-2);}
 </header>
 
 <div class="layout">
-  <aside class="sidebar"><nav class="nav" id="nav"></nav><div class="nav-ver">Mera · v1.0.0</div><div class="nav-built">Built by: Jeremy Gagnon</div></aside>
+  <aside class="sidebar"><nav class="nav" id="nav"></nav><div class="nav-sync" id="navSync"></div><div class="nav-ver">Mera · v1.0.0</div><div class="nav-built">Built by: Jeremy Gagnon</div></aside>
   <main id="main"></main>
 </div>
 
@@ -380,6 +396,7 @@ tbody tr:hover{background:var(--panel-2);}
 <script>
 /* ============================ icons ============================ */
 const I={
+  home:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>',
   lib:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
   ok:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>',
   no:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
@@ -497,9 +514,9 @@ LOTS.forEach(l=>{ if(l.status==='received'){ if(!l.cann)l.cann=cann(l.thc||0,l.c
 if(_coaFix)save('coa.lots',LOTS);
 /* one-time: rewrite any previously-stored lots without their base64 PDF bytes
    so the localStorage quota is reclaimed and specs/edits can persist again */
-if(!load('coa.slimPdf','')){ saveLots(); save('coa.slimPdf','1'); }
-let curPage='library', curLot=null, listFilter='', supFilter='all', curSpecType=PTYPES[0], intakeType=PTYPES[0];
-let intakeItems=[], intakeSeq=0;
+if(!load('coa.slimPdf','')){ save('coa.lots',LOTS.map(slimLot)); save('coa.slimPdf','1'); }
+let curPage='home', curLot=null, listFilter='', supFilter='all', curSpecType=PTYPES[0], intakeType=PTYPES[0], lotFrom='library';
+let intakeItems=[], intakeSeq=0, intakeFrom='home';
 
 /* Persist lot metadata only — never the base64 PDF bytes. Storing the
    attached PDFs (1–2 MB each as data URLs) overflows the ~5 MB localStorage
@@ -512,7 +529,57 @@ function slimLot(l){
   if(c.coaFiles)c.coaFiles=c.coaFiles.map(f=>({name:f.name}));
   return c;
 }
-function saveLots(){return save('coa.lots',LOTS.map(slimLot));} function saveSpecs(){return save('coa.specs',SPECS);}
+function saveLots(){const ok=save('coa.lots',LOTS.map(slimLot)); cloudPushDebounced(); return ok;} function saveSpecs(){return save('coa.specs',SPECS);}
+
+/* ============================ cloud sync (Supabase) ============================
+   Optional shared backend so the lot library is the same for everyone who opens
+   the page. Leave url/anonKey blank and the app runs purely on this device
+   (localStorage). Paste your project's values to turn syncing on. The anon key
+   is designed to live in client code; with no login the table's row-level
+   security policies allow anonymous read/write (see the one-time setup SQL). */
+const SUPABASE={ url:'https://moqxkknwrpizddtbywog.supabase.co', anonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vcXhra253cnBpemRkdGJ5d29nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzQ1ODQsImV4cCI6MjA5NzgxMDU4NH0.BtPzVs51mZSLw9WlNCQmRruZ8z1fwMGWmVDgoPuGdsM' };
+const cloudOn=()=>!!(SUPABASE.url&&SUPABASE.anonKey);
+let cloudPushT=null, cloudPulling=false;
+function cloudHeaders(extra){ return Object.assign({apikey:SUPABASE.anonKey,Authorization:'Bearer '+SUPABASE.anonKey,'Content-Type':'application/json'}, extra||{}); }
+function setSync(state){ const el=$('#navSync'); if(!el)return; el.className='nav-sync '+state; el.textContent={off:'On this device',sync:'Syncing…',ok:'Synced',err:'Offline — saved locally'}[state]||''; }
+function restoreBytes(l,prev){ if(!prev)return l; if(prev.coaData&&!l.coaData)l.coaData=prev.coaData; if(prev.coaFiles&&l.coaFiles)l.coaFiles=l.coaFiles.map(f=>{const pf=prev.coaFiles.find(p=>p.name===f.name);return (pf&&pf.data)?Object.assign({},f,{data:pf.data}):f;}); return l; }
+function onIntakePage(){ return curPage==='intake'||curPage.slice(0,7)==='intake:'; }
+async function cloudPull(){
+  if(!cloudOn()||cloudPulling)return;
+  cloudPulling=true; setSync('sync');
+  try{
+    const r=await fetch(SUPABASE.url+'/rest/v1/lots?select=data&order=updated_at.desc',{headers:cloudHeaders()});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const rows=await r.json();
+    const cloud=rows.map(x=>x.data).filter(Boolean);
+    const cloudIds=new Set(cloud.map(l=>String(l.id)));
+    const localById={}; LOTS.forEach(l=>{localById[String(l.id)]=l;});
+    const localOnly=LOTS.filter(l=>!cloudIds.has(String(l.id)));   // added on this device, not yet pushed
+    const before=JSON.stringify(LOTS.map(slimLot));
+    LOTS=localOnly.concat(cloud.map(l=>restoreBytes(l,localById[String(l.id)])));
+    save('coa.lots',LOTS.map(slimLot));
+    setSync('ok');
+    if(localOnly.length)cloudPushAll();
+    if(JSON.stringify(LOTS.map(slimLot))!==before && !onIntakePage())showPage(curPage);
+  }catch(e){ setSync('err'); }
+  finally{ cloudPulling=false; }
+}
+function cloudPushAll(){
+  if(!cloudOn())return;
+  const body=LOTS.map(l=>({id:String(l.id),data:slimLot(l),updated_at:new Date().toISOString()}));
+  if(!body.length){ setSync('ok'); return; }
+  setSync('sync');
+  fetch(SUPABASE.url+'/rest/v1/lots',{method:'POST',headers:cloudHeaders({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(body)})
+    .then(r=>{ if(!r.ok)throw new Error('HTTP '+r.status); setSync('ok'); })
+    .catch(()=>{ setSync('err'); toast('Cloud save failed — changes kept on this device'); });
+}
+function cloudPushDebounced(){ if(!cloudOn())return; clearTimeout(cloudPushT); setSync('sync'); cloudPushT=setTimeout(cloudPushAll,400); }
+function cloudInit(){
+  if(!cloudOn()){ setSync('off'); return; }
+  cloudPull();
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden)cloudPull(); });
+  setInterval(()=>{ if(!document.hidden)cloudPull(); },45000);
+}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function fmtN(v){if(v==null)return'—';return Math.round(v).toLocaleString();}
@@ -563,6 +630,7 @@ function renderNav(){
   const v=LOTS.map(verdict);
   const counts={review:v.filter(x=>x.overall==='review').length,await:v.filter(x=>x.overall==='await').length};
   let h='';
+  h+=item('home','Home',I.home,null);
   h+=`<div class="nav-sec">Flower Type</div>`;
   PTYPES.forEach(t=>{
     const n=LOTS.filter(l=>l.ptype===t).length;
@@ -575,7 +643,7 @@ function renderNav(){
     h+=`<div class="nav-item ${supFilter===s&&curPage==='library'?'active':''}" data-sup="${esc(s)}"><span class="dot" style="background:var(--accent)"></span>${esc(s)}<span class="ni-count">${n}</span></div>`;
   });
   h+=`<div class="nav-sec">Review</div>`;
-  h+=item('library','All samples',I.lib,LOTS.length);
+  h+=item('library','Outstanding samples',I.lib,LOTS.filter(l=>!l.approval).length);
   h+=item('approved','Approved lots',I.ok,LOTS.filter(l=>l.approval==='approved').length);
   h+=item('rejected','Rejected lots',I.no,LOTS.filter(l=>l.approval==='rejected').length);
   h+=item('specs','Specifications',I.spec,null);
@@ -674,20 +742,23 @@ function buildSchedule(){
 /* ============================ pages ============================ */
 function showPage(p){
   curPage=p; let r;
-  if(p==='library')r=buildLibrary();
+  if(p==='home')r=buildHome();
+  else if(p==='library')r=buildLibrary();
   else if(p==='approved')r=buildDecision('approved');
   else if(p==='rejected')r=buildDecision('rejected');
   else if(p==='specs')r=buildSpecs();
   else if(p==='schedule')r=buildSchedule();
   else if(p.slice(0,5)==='type:'){const t=p.slice(5); if(PTYPES.indexOf(t)>=0)curSpecType=t; r=buildType();}
   else if(p==='intake'||p.slice(0,7)==='intake:'){
-    if(p.slice(0,7)==='intake:'){const t=p.slice(7); if(PTYPES.indexOf(t)>=0){intakeType=t;curSpecType=t;}}
+    if(p.slice(0,7)==='intake:'){const t=p.slice(7); if(PTYPES.indexOf(t)>=0){intakeType=t;curSpecType=t;} intakeFrom='type';}
+    else intakeFrom='home';
     r=buildIntake();
   }
   else if(p.slice(0,4)==='lot:'){curLot=p.slice(4);r=buildLot(curLot);}
   else r=buildLibrary();
   $('#main').innerHTML=r;
   renderNav();
+  if(p==='home')wireHome();
   if(p==='intake'||p.slice(0,7)==='intake:')wireIntake();
   if(p==='specs')wireSpecs();
   if(p.slice(0,5)==='type:')wireType();
@@ -710,9 +781,37 @@ function kpis(){
   </div>`;
 }
 
+function buildHome(){
+  const out=LOTS.filter(l=>!l.approval);
+  const approved=LOTS.filter(l=>l.approval==='approved').length;
+  const rejected=LOTS.filter(l=>l.approval==='rejected').length;
+  let h=`<div class="page-head home-head"><div><h2>Welcome</h2><p>Log new flower samples, review their certificates of analysis and decide what to buy. Each lot is judged against your per-product-type spec.</p></div>
+    <button class="btn-primary" id="addHomeSample">${I.add}Add sample</button></div>`;
+  h+=kpis();
+  const top=out.slice(0,6);
+  const rows=top.map(l=>`<tr data-lot="${esc(l.id)}">
+    <td class="l"><div class="strain">${esc(l.strain)}<span class="s2">${esc(l.id)}</span></div></td>
+    <td class="l"><span class="catdot"><span class="dot" style="background:${PCOLOR[l.ptype]||'var(--muted)'}"></span>${esc(PSHORT[l.ptype]||l.ptype)}</span></td>
+    <td class="l">${esc(l.supplier)}</td>
+    <td class="l">${chip(l)}</td>
+    <td class="l">${apprCell(l)}</td>
+  </tr>`).join('');
+  h+=`<div class="panel">
+    <div class="panel-head"><div class="ph-t"><span class="dot" style="background:var(--accent)"></span>Outstanding samples</div><div class="ph-meta">${out.length} awaiting a decision</div></div>
+    ${out.length?`<table><thead><tr><th class="l">Lot / strain</th><th class="l">Category</th><th class="l">Supplier</th><th class="l">Verdict</th><th class="l">Decision</th></tr></thead><tbody>${rows}</tbody></table>${out.length>top.length?`<div class="home-more" data-go="library">View all ${out.length} outstanding samples →</div>`:''}`:`<div class="empty">Nothing waiting on you — every sample has been approved or rejected. Use <b>Add sample</b> to log a new one.</div>`}
+  </div>`;
+  h+=`<div class="home-cards">
+    <div class="home-card" data-go="library"><span class="hc-ico">${I.lib}</span><div><div class="hc-t">Outstanding</div><div class="hc-s">${out.length} awaiting decision</div></div></div>
+    <div class="home-card" data-go="approved"><span class="hc-ico">${I.ok}</span><div><div class="hc-t">Approved</div><div class="hc-s">${approved} cleared to buy</div></div></div>
+    <div class="home-card" data-go="rejected"><span class="hc-ico">${I.no}</span><div><div class="hc-t">Rejected</div><div class="hc-s">${rejected} passed on</div></div></div>
+    <div class="home-card" data-go="specs"><span class="hc-ico">${I.spec}</span><div><div class="hc-t">Specifications</div><div class="hc-s">Acceptance thresholds</div></div></div>
+    <div class="home-card" data-go="schedule"><span class="hc-ico">${I.cal}</span><div><div class="hc-t">Flower schedule</div><div class="hc-s">Monthly purchasing plan</div></div></div>
+  </div>`;
+  return h;
+}
 function buildLibrary(){
   const sups=['all',...suppliers()];
-  let h=`<div class="page-head"><div><h2>All samples</h2></div></div>`;
+  let h=`<div class="page-head"><div><h2>Outstanding Samples</h2><p>Samples awaiting your decision — approve or reject each one. Approved and rejected lots move to their own pages.</p></div></div>`;
   h+=kpis();
   h+=`<div class="toolbar">
     <div class="search">${I.search}<input id="lotSearch" placeholder="Search lot, strain or supplier…" value="${esc(listFilter)}"></div>
@@ -722,7 +821,7 @@ function buildLibrary(){
   return h;
 }
 function libBody(){
-  let rows=LOTS.slice();
+  let rows=LOTS.filter(l=>!l.approval);
   if(supFilter!=='all')rows=rows.filter(l=>l.supplier===supFilter);
   const q=listFilter.trim().toLowerCase();
   if(q)rows=rows.filter(l=>(l.id+' '+l.strain+' '+l.supplier).toLowerCase().includes(q));
@@ -730,8 +829,9 @@ function libBody(){
   const groups={}; rows.forEach(l=>{(groups[l.supplier]=groups[l.supplier]||[]).push(l);});
   const keys=Object.keys(groups).sort();
   if(!keys.length){
-    if(!LOTS.length)return `<div class="panel"><div class="empty">No samples yet — pick a <b>flower type</b> in the sidebar, then use <b>New sample</b> on that page to log your first one.</div></div>`;
-    return `<div class="panel"><div class="empty">No lots match "${esc(listFilter)}".</div></div>`;
+    if(!LOTS.length)return `<div class="panel"><div class="empty">No samples yet — use <b>Add sample</b> on the <b>Home</b> page to log your first one.</div></div>`;
+    if(!LOTS.some(l=>!l.approval))return `<div class="panel"><div class="empty">No outstanding samples — every lot has been approved or rejected.</div></div>`;
+    return `<div class="panel"><div class="empty">No outstanding lots match "${esc(listFilter)}".</div></div>`;
   }
   const collapsed=new Set(load('coa.collapsedSups',[]));
   return keys.map(s=>{
@@ -762,7 +862,7 @@ function buildLot(id){
   const l=LOTS.find(x=>x.id===id); if(!l)return `<div class="empty">Lot not found.</div>`;
   const v=verdict(l);
   const aw=l.status==='awaiting';
-  let h=`<div class="back" data-back>← All samples</div>`;
+  let h=`<div class="back" data-go="${esc(lotFrom||'library')}">← Back</div>`;
   const tag=(k,val)=>val?`<span class="lot-tag"><i>${esc(k)}</i>${esc(val)}</span>`:'';
   const tags=[
     tag('Supplier',l.supplier),
@@ -829,7 +929,7 @@ function buildDecision(kind){
     ?'Lots you\'ve cleared to buy. Approve more from any sample\'s row or its detail page; click the chip to move one back to undecided.'
     :'Lots you\'ve passed on — kept on record without deleting the certificate. Click the chip to move one back to undecided.';
   let h=`<div class="page-head"><div><h2>${title}</h2><p>${sub}</p></div></div>`;
-  if(!ls.length)return h+`<div class="panel"><div class="empty">No ${isAp?'approved':'rejected'} lots yet — use <b>${isAp?'Approve':'Reject'}</b> on a sample in <b>All samples</b> or on its detail page.</div></div>`;
+  if(!ls.length)return h+`<div class="panel"><div class="empty">No ${isAp?'approved':'rejected'} lots yet — use <b>${isAp?'Approve':'Reject'}</b> on a sample in <b>Outstanding Samples</b> or on its detail page.</div></div>`;
   h+=`<div class="panel"><table><thead><tr>
     <th class="l">Lot / strain</th><th class="l">Supplier</th><th class="l">Category</th><th>Total THC</th><th>Terpenes</th><th>Buy price</th><th class="l">Verdict</th><th class="l">${isAp?'Approved':'Rejected'}</th><th class="l">Decision</th>
   </tr></thead><tbody>
@@ -918,11 +1018,17 @@ function buildIntake(){
   intakeItems=[]; intakeSeq=0;
   const sups=[...new Set(LOTS.map(l=>l.supplier).filter(s=>s&&s!=='(unknown supplier)'))].sort();
   const supOpts=sups.map(s=>`<option value="${esc(s)}">`).join('');
-  return `<div class="back" data-type-back>← ${esc(PSHORT[t]||t)}</div>
-  <div class="page-head"><div><h2>New ${esc(PSHORT[t]||t)} samples</h2></div></div>
+  const typeOpts=PTYPES.map(p=>`<option value="${esc(p)}"${p===t?' selected':''}>${esc(PSHORT[p]||p)}</option>`).join('');
+  const back=intakeFrom==='type'
+    ?`<div class="back" data-type-back>← ${esc(PSHORT[t]||t)}</div>`
+    :`<div class="back" data-go="home">← Home</div>`;
+  return `${back}
+  <div class="page-head"><div><h2>Add samples</h2></div></div>
   <div class="panel">
-    <div class="panel-head"><div class="ph-t"><span class="dot" style="background:${PCOLOR[t]}"></span>Add samples · ${esc(PSHORT[t]||t)}</div><div class="ph-meta" id="lotCountMeta">0 ready</div></div>
+    <div class="panel-head"><div class="ph-t"><span class="dot" id="typeDot" style="background:${PCOLOR[t]}"></span><span id="typeLabel">Add samples · ${esc(PSHORT[t]||t)}</span></div><div class="ph-meta" id="lotCountMeta">0 ready</div></div>
     <div class="intake-sup">
+      <label for="typeField">Flower type</label>
+      <select id="typeField">${typeOpts}</select>
       <label for="supField">Supplier</label>
       <input id="supField" list="supList" type="text" placeholder="Supplier name" autocomplete="off">
       <datalist id="supList">${supOpts}</datalist>
@@ -959,6 +1065,9 @@ function itemHtml(it){
 }
 
 /* ============================ wiring ============================ */
+function wireHome(){
+  {const a=$('#addHomeSample'); if(a)a.addEventListener('click',()=>showPage('intake'));}
+}
 function wireLibrary(){
   const s=$('#lotSearch'); if(s)s.addEventListener('input',()=>{listFilter=s.value;$('#libBody').innerHTML=libBody();});
   $('#main').querySelectorAll('.seg[data-sup]').forEach(b=>b.addEventListener('click',()=>{supFilter=b.dataset.sup;showPage('library');}));
@@ -1006,6 +1115,11 @@ function wireIntake(){
   input.addEventListener('change',()=>{if(input.files.length)addCoaFiles(input.files);input.value='';});
   items.addEventListener('click',e=>{const d=e.target.closest('[data-del]'); if(!d)return; const card=d.closest('[data-item]'); intakeItems=intakeItems.filter(it=>it.key!==card.dataset.item); card.remove(); updateLotCount();});
   items.addEventListener('input',e=>{const f=e.target.closest('[data-f]'); if(!f)return; const card=f.closest('[data-item]'); const it=intakeItems.find(x=>x.key===card.dataset.item); if(it){it[f.dataset.f]=f.value.trim()||null; updateLotCount();}});
+  {const tf=$('#typeField'); if(tf)tf.addEventListener('change',()=>{
+    if(PTYPES.indexOf(tf.value)>=0){intakeType=tf.value;curSpecType=tf.value;}
+    const dot=$('#typeDot'); if(dot)dot.style.background=PCOLOR[intakeType];
+    const lab=$('#typeLabel'); if(lab)lab.textContent='Add samples · '+(PSHORT[intakeType]||intakeType);
+  });}
   $('#saveLots').addEventListener('click',commitLots);
   updateLotCount();
 }
@@ -1051,6 +1165,7 @@ function updateLotCount(){
 }
 function commitLots(){
   syncEdits();
+  const tf=$('#typeField'); const ptype=(tf&&PTYPES.indexOf(tf.value)>=0)?tf.value:intakeType;
   const sup=(($('#supField')&&$('#supField').value)||'').trim();
   const ready=intakeItems.filter(it=>it.status!=='reading'&&it.id&&String(it.id).trim()!=='');
   if(!ready.length){toast('Add a CoA PDF (or type a Lot #) first');return;}
@@ -1066,7 +1181,7 @@ function commitLots(){
       lab:it.lab||'—',
       received:it.received||new Date().toISOString().slice(0,10),
       coaFiles:files, coaName:(files[0]&&files[0].name)||null, coaData:(files[0]&&files[0].data)||null,
-      ptype:intakeType, supplier:sup||it.supplier||'(unknown supplier)',
+      ptype:ptype, supplier:sup||it.supplier||'(unknown supplier)',
     };
     o.status=(o.coaData||o.thc!=null||o.micro)?'received':'awaiting';
     if(o.status==='received'){o.cann=cann(o.thc||0,o.cbd||0,ACTIVATED(o.ptype));o.terp=terp(o.terps||0);}
@@ -1075,7 +1190,7 @@ function commitLots(){
   });
   const ok=saveLots();
   const parts=[]; if(added)parts.push(added+' added'); if(updated)parts.push(updated+' updated');
-  toast(ok?`${PSHORT[intakeType]||intakeType} · ${parts.join(' · ')}`:'Browser storage is full — CoA PDFs are too large to save. Remove old samples and try again.');
+  toast(ok?`${PSHORT[ptype]||ptype} · ${parts.join(' · ')}`:'Browser storage is full — CoA PDFs are too large to save. Remove old samples and try again.');
   showPage('library');
 }
 
@@ -1261,12 +1376,14 @@ $('#nav').addEventListener('click',e=>{
 $('#main').addEventListener('click',e=>{
   const dec=e.target.closest('[data-decide]');
   if(dec){e.stopPropagation();decide(dec.dataset.id,dec.dataset.decide);return;}
+  const go=e.target.closest('[data-go]');
+  if(go){showPage(go.dataset.go);return;}
   if(e.target.closest('[data-type-back]')){showPage('type:'+intakeType);return;}
   if(e.target.closest('[data-back]')){showPage('library');return;}
   const ph=e.target.closest('.panel-head[data-sup-panel]');
   if(ph){toggleSupCollapse(ph.dataset.supPanel);return;}
   const row=e.target.closest('[data-lot]');
-  if(row){showPage('lot:'+row.dataset.lot);return;}
+  if(row){lotFrom=curPage;showPage('lot:'+row.dataset.lot);return;}
 });
 function toggleSupCollapse(s){
   const set=new Set(load('coa.collapsedSups',[]));
@@ -1281,11 +1398,11 @@ function decide(id,what){
     toast(what==='approved'?'Lot approved':'Lot rejected');}
   saveLots();showPage(curPage);
 }
-$('#footnote').innerHTML='Mera Cannabis — CoA review &amp; supplier-lot spec compliance. Each lot is judged against the <b>per-product-type spec</b> for its type (Pre-Rolls, Infusion Low/High, Hydrocarbon Extraction, GMP Distillate); thresholds and the lot library persist in this browser only. '+
-  'Add samples from each flower type\'s page so they stay sorted by type; attach the certificate PDF and the lab results are parsed locally. Edit thresholds on the same page.';
+$('#footnote').innerHTML='Mera Cannabis — CoA review &amp; supplier-lot spec compliance. Each lot is judged against the <b>per-product-type spec</b> for its type (Pre-Rolls, Infusion Low/High, Hydrocarbon Extraction, GMP Distillate); spec thresholds are saved in this browser, and the lot library is shared across everyone when cloud sync is on (status shown in the sidebar). '+
+  'Use <b>Add sample</b> on the Home page (or a flower-type page) to log a CoA — choose its flower type, attach the certificate PDF and the lab results are parsed locally. New samples wait in <b>Outstanding Samples</b> until you approve or reject them.';
 
 /* ============================ init ============================ */
-applyTheme();showPage('library');
+applyTheme();showPage('home');cloudInit();
 </script>
 </body>
 </html>
