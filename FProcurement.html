@@ -279,6 +279,29 @@ tbody tr:hover{background:var(--panel-2);}
 .btn-ghost{font-family:var(--font);font-weight:600;font-size:13px;border:1px dashed var(--line);background:transparent;color:var(--ink-2);border-radius:9px;padding:0 14px;height:36px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;transition:border-color .14s,color .14s;}
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
 .btn-ghost svg{width:14px;height:14px;}
+/* simplified CoA intake: each dropped certificate becomes a parsed sample card */
+.drop{margin:16px;}
+.drop .di svg{width:26px;height:26px;}
+.coa-items{display:flex;flex-direction:column;}
+.coa-item{padding:14px 16px;border-bottom:1px solid var(--line-2);}
+.coa-item:last-child{border-bottom:none;}
+.coa-item.reading{opacity:.85;}
+.ci-head{display:flex;align-items:center;gap:10px;}
+.ci-icon{display:inline-flex;color:var(--accent);}
+.ci-icon svg{width:15px;height:15px;}
+.ci-file{font-family:var(--mono);font-size:12px;color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px;}
+.ci-lab{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--inset);border:1px solid var(--line);border-radius:999px;padding:3px 9px;}
+.ci-head .coa-status{margin:0;}
+.ci-head .row-del{margin-left:auto;}
+.ci-fields{display:flex;gap:14px;margin-top:11px;flex-wrap:wrap;}
+.ci-fl{display:flex;flex-direction:column;gap:5px;flex:1;min-width:160px;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.ci-fl input{background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:13px;text-transform:none;letter-spacing:0;outline:none;transition:border-color .14s;}
+.ci-fl input:focus{border-color:var(--accent);}
+.ci-metrics{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:13px;}
+.ci-m{display:inline-flex;align-items:baseline;gap:7px;font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink);}
+.ci-ml{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);}
+.ci-pf{font-family:var(--mono);font-size:11px;font-weight:600;}
+.ci-pf.ok{color:var(--teal-bright);} .ci-pf.bad{color:var(--coral);} .ci-pf.na{color:var(--muted);}
 .spec-ref{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:18px;flex-wrap:wrap;}
 .spec-ref.spec-ref-foot{margin:16px 0 0;padding:10px 14px;background:var(--panel-2);}
 .spec-ref.spec-ref-foot .btn-ghost{padding:6px 12px;font-size:12px;}
@@ -476,7 +499,7 @@ if(_coaFix)save('coa.lots',LOTS);
    so the localStorage quota is reclaimed and specs/edits can persist again */
 if(!load('coa.slimPdf','')){ saveLots(); save('coa.slimPdf','1'); }
 let curPage='library', curLot=null, listFilter='', supFilter='all', curSpecType=PTYPES[0], intakeType=PTYPES[0];
-let intakeParsed={}, intakeSeq=0;
+let intakeItems=[], intakeSeq=0;
 
 /* Persist lot metadata only — never the base64 PDF bytes. Storing the
    attached PDFs (1–2 MB each as data URLs) overflows the ~5 MB localStorage
@@ -892,47 +915,47 @@ function buildSpecs(){
 
 function buildIntake(){
   const t=intakeType;
-  intakeParsed={}; intakeSeq=0;
-  const rows=[rowHtml(),rowHtml(),rowHtml()].join('');
+  intakeItems=[]; intakeSeq=0;
   const sups=[...new Set(LOTS.map(l=>l.supplier).filter(s=>s&&s!=='(unknown supplier)'))].sort();
   const supOpts=sups.map(s=>`<option value="${esc(s)}">`).join('');
   return `<div class="back" data-type-back>← ${esc(PSHORT[t]||t)}</div>
   <div class="page-head"><div><h2>New ${esc(PSHORT[t]||t)} samples</h2></div></div>
   <div class="panel">
-    <div class="panel-head"><div class="ph-t"><span class="dot" style="background:${PCOLOR[t]}"></span>Lots to add · ${esc(PSHORT[t]||t)}</div><div class="ph-meta" id="lotCountMeta">0 ready</div></div>
+    <div class="panel-head"><div class="ph-t"><span class="dot" style="background:${PCOLOR[t]}"></span>Add samples · ${esc(PSHORT[t]||t)}</div><div class="ph-meta" id="lotCountMeta">0 ready</div></div>
     <div class="intake-sup">
       <label for="supField">Supplier</label>
       <input id="supField" list="supList" type="text" placeholder="Supplier name" autocomplete="off">
       <datalist id="supList">${supOpts}</datalist>
     </div>
-    <div class="lot-tablewrap">
-      <table class="lot-table" id="lotTable" style="min-width:680px">
-        <colgroup><col style="width:30%"><col style="width:20%"><col style="width:15%"><col style="width:15%"><col style="width:130px"><col style="width:44px"></colgroup>
-        <thead><tr>
-          <th>Cultivar</th><th>Lot #</th><th>Qty (g)</th><th>Price/g</th><th>CoA</th><th></th>
-        </tr></thead>
-        <tbody id="lotBody">${rows}</tbody>
-      </table>
+    <div class="drop" id="dropZone" tabindex="0" role="button" aria-label="Add CoA PDF">
+      <div class="di">${I.doc}</div>
+      <div class="dt">Drop CoA PDFs here or click to browse</div>
+      <div class="ds">Each PDF becomes a sample — cultivar, lot #, potency, moisture and microbial results are read straight from the certificate</div>
+      <input type="file" id="dropInput" accept="application/pdf" multiple hidden>
     </div>
+    <div class="coa-items" id="coaItems"></div>
     <div class="lot-foot">
-      <button type="button" class="btn-ghost" id="addRow">${I.add} Add another lot</button>
       <button type="button" class="btn-primary" id="saveLots">Add samples to library</button>
     </div>
   </div>
-  <div class="hint">One supplier per batch — set it above, then add each cultivar/lot with its quantity and buy price. Attach a CoA PDF on any line to parse it locally; hover the CoA link for a potency/moisture/microbial snapshot, or click it to download the file.</div>`;
+  <div class="hint">One supplier per batch — set it above, then drop in each CoA PDF. Certificates are parsed locally in your browser; nothing is uploaded. If a value can't be read, edit the cultivar or lot # right on the card before saving.</div>`;
 }
-function coaCellInit(){return `<button type="button" class="coa-btn" data-coa>${I.doc} Attach</button><input type="file" class="row-pdf" accept="application/pdf" multiple hidden>`;}
-function rowHtml(d){
-  d=d||{}; const id='r'+(++intakeSeq);
-  const v=k=>d[k]!=null?esc(d[k]):'';
-  return `<tr data-row="${id}">
-    <td><input data-rc="strain" type="text" placeholder="Cultivar" value="${v('strain')}"></td>
-    <td><input data-rc="id" type="text" placeholder="Lot #" value="${v('id')}"></td>
-    <td class="c-num"><input data-rc="qty" type="number" step="0.01" placeholder="0" value="${v('qty')}"></td>
-    <td class="c-num"><input data-rc="price" type="number" step="0.01" placeholder="0" value="${v('price')}"></td>
-    <td class="coa-cell">${coaCellInit()}</td>
-    <td><button type="button" class="row-del" data-del title="Remove this lot">✕</button></td>
-  </tr>`;
+function itemHtml(it){
+  const pf=v=>v==='pass'?'<span class="ci-pf ok">Pass</span>':v==='fail'?'<span class="ci-pf bad">Fail</span>':'<span class="ci-pf na">—</span>';
+  const m=(label,val,suf)=>`<span class="ci-m"><span class="ci-ml">${label}</span><b>${val!=null&&val!==''&&!isNaN(val)?num(val)+(suf||''):'—'}</b></span>`;
+  if(it.status==='reading')
+    return `<div class="coa-item reading" data-item="${it.key}"><div class="ci-head"><span class="ci-icon">${I.doc}</span><span class="ci-file">${esc(it.name)}</span><span class="coa-status">${esc(it.msg||'Reading…')}</span></div></div>`;
+  if(it.status==='err')
+    return `<div class="coa-item" data-item="${it.key}"><div class="ci-head"><span class="ci-icon">${I.doc}</span><span class="ci-file">${esc(it.name)}</span><span class="coa-status err">✕ ${esc(it.msg||'Could not read file')}</span><button type="button" class="row-del" data-del title="Remove">✕</button></div></div>`;
+  const v=k=>it[k]!=null?esc(it[k]):'';
+  return `<div class="coa-item" data-item="${it.key}">
+    <div class="ci-head"><span class="ci-icon">${I.doc}</span><span class="ci-file">${esc(it.name)}</span>${it.lab?`<span class="ci-lab">${esc(it.lab)}</span>`:''}<button type="button" class="row-del" data-del title="Remove this sample">✕</button></div>
+    <div class="ci-fields">
+      <label class="ci-fl">Cultivar<input data-f="strain" type="text" placeholder="Cultivar" value="${v('strain')}"></label>
+      <label class="ci-fl">Lot #<input data-f="id" type="text" placeholder="Lot #" value="${v('id')}"></label>
+    </div>
+    <div class="ci-metrics">${m('THC',it.thc,'%')}${m('CBD',it.cbd,'%')}${m('Moisture',it.moisture,'%')}${m('Terpenes',it.terps,'%')}<span class="ci-m"><span class="ci-ml">Micro</span>${pf(it.micro)}</span><span class="ci-m"><span class="ci-ml">Pest</span>${pf(it.pest)}</span></div>
+  </div>`;
 }
 
 /* ============================ wiring ============================ */
@@ -974,51 +997,77 @@ function wireSpecs(){
   });
 }
 function wireIntake(){
-  const body=$('#lotBody'), tbl=$('#lotTable'), wrap=tbl.closest('.lot-tablewrap');
-  $('#addRow').addEventListener('click',()=>{body.insertAdjacentHTML('beforeend',rowHtml());updateLotCount();});
+  const dz=$('#dropZone'), input=$('#dropInput'), items=$('#coaItems');
+  dz.addEventListener('click',()=>input.click());
+  dz.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();input.click();}});
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer&&e.dataTransfer.files.length)addCoaFiles(e.dataTransfer.files);});
+  input.addEventListener('change',()=>{if(input.files.length)addCoaFiles(input.files);input.value='';});
+  items.addEventListener('click',e=>{const d=e.target.closest('[data-del]'); if(!d)return; const card=d.closest('[data-item]'); intakeItems=intakeItems.filter(it=>it.key!==card.dataset.item); card.remove(); updateLotCount();});
+  items.addEventListener('input',e=>{const f=e.target.closest('[data-f]'); if(!f)return; const card=f.closest('[data-item]'); const it=intakeItems.find(x=>x.key===card.dataset.item); if(it){it[f.dataset.f]=f.value.trim()||null; updateLotCount();}});
   $('#saveLots').addEventListener('click',commitLots);
-  tbl.addEventListener('click',e=>{
-    const del=e.target.closest('[data-del]');
-    if(del){const tr=del.closest('tr'); if(body.children.length>1){delete intakeParsed[tr.dataset.row];tr.remove();}else clearRow(tr); updateLotCount(); return;}
-    const coa=e.target.closest('[data-coa]');
-    if(coa){coa.closest('tr').querySelector('.row-pdf').click(); return;}
-  });
-  tbl.addEventListener('change',e=>{const inp=e.target.closest('.row-pdf'); if(inp&&inp.files.length)handleRowPdf(inp.closest('tr'),inp.files);});
-  tbl.addEventListener('input',e=>{if(e.target.matches('[data-rc="id"]'))updateLotCount();});
-  tbl.addEventListener('mouseover',e=>{const link=e.target.closest('[data-coatip]'); if(link)showCoaTip(link,intakeParsed[link.closest('tr').dataset.row]);});
-  tbl.addEventListener('mouseout',e=>{const link=e.target.closest('[data-coatip]'); if(link&&!e.relatedTarget?.closest?.('[data-coatip]'))hideCoaTip();});
-  if(wrap)wrap.addEventListener('scroll',hideCoaTip);
-  window.addEventListener('scroll',hideCoaTip,{passive:true});
   updateLotCount();
 }
-function clearRow(tr){
-  tr.querySelectorAll('[data-rc]').forEach(i=>{i.value='';});
-  delete intakeParsed[tr.dataset.row];
-  const cell=tr.querySelector('.coa-cell'); if(cell)cell.innerHTML=coaCellInit();
+function patchCard(it){
+  const wrap=$('#coaItems'); if(!wrap)return;
+  const card=wrap.querySelector(`[data-item="${it.key}"]`);
+  if(card)card.outerHTML=itemHtml(it); else wrap.insertAdjacentHTML('beforeend',itemHtml(it));
+}
+function syncEdits(){
+  const wrap=$('#coaItems'); if(!wrap)return;
+  wrap.querySelectorAll('[data-item]').forEach(card=>{
+    const it=intakeItems.find(x=>x.key===card.dataset.item); if(!it)return;
+    card.querySelectorAll('[data-f]').forEach(i=>{ it[i.dataset.f]=i.value.trim()||null; });
+  });
+}
+async function addCoaFiles(fileList){
+  const all=[...fileList].filter(Boolean);
+  const files=all.filter(f=>/\.pdf$/i.test(f.name||'')||f.type==='application/pdf');
+  if(!files.length){ if(all.length)toast('Only PDF certificates can be parsed'); return; }
+  for(const file of files){
+    const it={key:'i'+(++intakeSeq),name:file.name,status:'reading',msg:'Reading…',coaFiles:[]};
+    intakeItems.push(it); patchCard(it);
+    try{
+      const dataUrl=await fileToDataUrl(file);
+      it.coaFiles=[{name:file.name,data:dataUrl}];
+      let text=''; try{ text=await extractPdfText(file); }catch(_){}
+      if(text.replace(/\s+/g,'').length<40){
+        it.msg='Scanned PDF — running OCR…'; patchCard(it);
+        try{ text=await ocrPdf(file,msg=>{it.msg=msg;patchCard(it);}); }catch(_){}
+      }
+      let parsed={}; try{ parsed=parseCoa(text); }catch(_){}
+      Object.assign(it,parsed);
+      it.status='ok';
+      const sf=$('#supField'); if(sf&&!sf.value.trim()&&it.supplier)sf.value=it.supplier;
+    }catch(err){ it.status='err'; it.msg=(err&&err.message)||'Could not read file'; }
+    patchCard(it); updateLotCount();
+  }
 }
 function updateLotCount(){
-  const n=[...$('#lotBody').querySelectorAll('[data-rc="id"]')].filter(i=>i.value.trim()!=='').length;
+  const n=intakeItems.filter(it=>it.id&&String(it.id).trim()!=='').length;
   const m=$('#lotCountMeta'); if(m)m.textContent=n+' ready';
   const b=$('#saveLots'); if(b)b.textContent=n>0?`Add ${n} sample${n===1?'':'s'} to library`:'Add samples to library';
 }
-function rowToLot(tr){
-  const o=Object.assign({}, intakeParsed[tr.dataset.row]||{});
-  delete o.parts;
-  tr.querySelectorAll('[data-rc]').forEach(i=>{const k=i.dataset.rc; const v=i.value.trim(); o[k]=v===''?null:v;});
-  ['thc','cbd','moisture','aw','terps','price','qty'].forEach(k=>{if(o[k]!=null&&o[k]!=='')o[k]=+o[k];});
-  return o;
-}
 function commitLots(){
+  syncEdits();
   const sup=(($('#supField')&&$('#supField').value)||'').trim();
-  const lots=[];
-  [...$('#lotBody').children].forEach(tr=>{const o=rowToLot(tr); if(o.id)lots.push(o);});
-  if(!lots.length){toast('Enter at least one Lot #');return;}
+  const ready=intakeItems.filter(it=>it.status!=='reading'&&it.id&&String(it.id).trim()!=='');
+  if(!ready.length){toast('Add a CoA PDF (or type a Lot #) first');return;}
   let added=0,updated=0;
-  lots.forEach(o=>{
-    o.ptype=intakeType;
-    o.supplier=sup||'(unknown supplier)';
-    if(!o.strain)o.strain='(unnamed)';
-    if(!o.lab)o.lab='—'; if(!o.received)o.received=new Date().toISOString().slice(0,10);
+  ready.forEach(it=>{
+    const files=it.coaFiles||[];
+    const o={
+      id:String(it.id).trim(),
+      strain:it.strain||'(unnamed)',
+      thc:it.thc!=null?+it.thc:null, cbd:it.cbd!=null?+it.cbd:null,
+      moisture:it.moisture!=null?+it.moisture:null, terps:it.terps!=null?+it.terps:null,
+      micro:it.micro||null, pest:it.pest||null,
+      lab:it.lab||'—',
+      received:it.received||new Date().toISOString().slice(0,10),
+      coaFiles:files, coaName:(files[0]&&files[0].name)||null, coaData:(files[0]&&files[0].data)||null,
+      ptype:intakeType, supplier:sup||it.supplier||'(unknown supplier)',
+    };
     o.status=(o.coaData||o.thc!=null||o.micro)?'received':'awaiting';
     if(o.status==='received'){o.cann=cann(o.thc||0,o.cbd||0,ACTIVATED(o.ptype));o.terp=terp(o.terps||0);}
     const ix=LOTS.findIndex(l=>l.id===o.id);
@@ -1041,13 +1090,6 @@ async function extractPdfText(file){
   return text.trim();
 }
 function fileToDataUrl(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('Could not read file'));r.readAsDataURL(file);});}
-function renderCoaCell(cell,rowId){
-  const p=intakeParsed[rowId]||{};
-  const files=p.coaFiles||[]; const n=files.length;
-  const first=files[0]||{name:p.coaName,data:p.coaData};
-  const label=n>1?`CoA ×${n}`:'CoA';
-  cell.innerHTML=`<a class="coa-link" href="${first.data||'#'}" download="${esc(first.name||'coa.pdf')}" data-coatip>${I.doc}<span class="coa-name">${label}</span></a><button type="button" class="coa-replace" data-coa title="Add another CoA part">+</button><input type="file" class="row-pdf" accept="application/pdf" multiple hidden>`;
-}
 function coaLinksHtml(l){
   const files=(l.coaFiles&&l.coaFiles.length)?l.coaFiles:(l.coaData?[{name:l.coaName||'coa.pdf',data:l.coaData}]:[]);
   const dl=files.filter(f=>f.data);
@@ -1055,57 +1097,6 @@ function coaLinksHtml(l){
   if(l.coaUrl&&!dl.length)h+=`<a class="coa-link" href="${esc(l.coaUrl)}" target="_blank" rel="noopener">${I.doc}<span class="coa-name">${esc(l.coaName||'View CoA in SharePoint')}</span></a>`;
   else if(!dl.length&&files.length)h+=files.map(f=>`<span class="coa-link" style="opacity:.55;cursor:default">${I.doc}<span class="coa-name">${esc(f.name||'CoA')}</span></span>`).join(' ');
   return h;
-}
-function coaTipHtml(p){
-  const pf=v=>v==='pass'?'<span class="pf ok">Pass</span>':v==='fail'?'<span class="pf bad">Fail</span>':'<span class="pf na">—</span>';
-  const files=p.coaFiles||[]; const fname=files.length>1?`${files.length} files`:((files[0]&&files[0].name)||p.coaName);
-  return (p.lab?`<div class="coa-tip-row"><span>Lab</span><b>${esc(p.lab)}</b></div>`:'')
-    +`<div class="coa-tip-row"><span>Total THC</span><b>${p.thc!=null?num(p.thc)+'%':'—'}</b></div>`
-    +`<div class="coa-tip-row"><span>Moisture</span><b>${p.moisture!=null?num(p.moisture)+'%':'—'}</b></div>`
-    +`<div class="coa-tip-row"><span>Microbial</span>${pf(p.micro)}</div>`
-    +`<div class="coa-tip-row"><span>Pesticides</span>${pf(p.pest)}</div>`
-    +(fname?`<div class="coa-tip-name">${esc(fname)}</div>`:'');
-}
-let coaTip=null;
-function showCoaTip(el,p){
-  hideCoaTip(); if(!p)return;
-  coaTip=document.createElement('div'); coaTip.className='coa-tip'; coaTip.innerHTML=coaTipHtml(p);
-  document.body.appendChild(coaTip);
-  const r=el.getBoundingClientRect(), t=coaTip.getBoundingClientRect();
-  let top=r.top-t.height-8; if(top<8)top=r.bottom+8;
-  let left=r.left+r.width/2-t.width/2; left=Math.max(8,Math.min(left,window.innerWidth-t.width-8));
-  coaTip.style.top=top+'px'; coaTip.style.left=left+'px';
-}
-function hideCoaTip(){if(coaTip){coaTip.remove();coaTip=null;}}
-async function handleRowPdf(tr,fileList){
-  const rowId=tr.dataset.row;
-  const cell=tr.querySelector('.coa-cell');
-  const files=[...fileList].filter(Boolean);
-  if(!files.length)return;
-  const store=intakeParsed[rowId]||(intakeParsed[rowId]={coaFiles:[],parts:[]});
-  store.coaFiles=store.coaFiles||[]; store.parts=store.parts||[];
-  const setStatus=m=>{cell.innerHTML=`<span class="coa-status">${esc(m)}</span>`;};
-  try{
-    for(const file of files){
-      setStatus(`Reading ${file.name}…`);
-      const dataUrl=await fileToDataUrl(file);
-      let text=''; try{ text=await extractPdfText(file); }catch(_){}
-      if(text.replace(/\s+/g,'').length<40){ // image-only / scanned → OCR
-        try{ text=await ocrPdf(file,msg=>setStatus(`${file.name} · ${msg}`)); }catch(_){}
-      }
-      let parsed={}; try{ parsed=parseCoa(text); }catch(_){}
-      store.parts.push(parsed);
-      store.coaFiles.push({name:file.name,data:dataUrl});
-    }
-    Object.assign(store,mergeParts(store.parts));
-    store.coaName=store.coaFiles[0]&&store.coaFiles[0].name;
-    store.coaData=store.coaFiles[0]&&store.coaFiles[0].data;
-    const fill=(k,val)=>{const i=tr.querySelector(`[data-rc="${k}"]`); if(i&&val!=null&&i.value.trim()==='')i.value=val;};
-    ['strain','id'].forEach(k=>fill(k,store[k]));
-    const sf=$('#supField'); if(sf&&!sf.value.trim()&&store.supplier)sf.value=store.supplier;
-    renderCoaCell(cell,rowId);
-    updateLotCount();
-  }catch(err){delete intakeParsed[rowId];cell.innerHTML=`<span class="coa-status err">✕ ${esc(err.message)}</span>${coaCellInit()}`;}
 }
 /* ---- lab-aware CoA parser (validated against Vivariant / A&L / Eurofins / Pathogenia / High North) ---- */
 function detectLab(T){
@@ -1214,11 +1205,6 @@ function parseCoa(rawText){
   }
   Object.keys(o).forEach(k=>{ if(o[k]===''||o[k]===undefined)o[k]=null; });
   return o;
-}
-function mergeParts(parts){
-  const out={};
-  for(const p of parts){ if(!p)continue; for(const k in p){ if(p[k]!=null&&out[k]==null)out[k]=p[k]; } }
-  return out;
 }
 
 /* ---- OCR fallback for scanned / image-only CoAs (e.g. High North) ---- */
