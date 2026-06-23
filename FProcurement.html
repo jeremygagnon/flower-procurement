@@ -301,6 +301,10 @@ tbody tr:hover{background:var(--panel-2);}
 .ci-lab{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--inset);border:1px solid var(--line);border-radius:999px;padding:3px 9px;}
 .ci-head .coa-status{margin:0;}
 .ci-head .row-del{margin-left:auto;}
+.ci-badge{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);background:var(--inset);border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap;}
+.ci-files{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 0;padding-left:25px;}
+.ci-fn{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.ci-fn svg{width:12px;height:12px;color:var(--accent);opacity:.8;}
 .ci-fields{display:flex;gap:14px;margin-top:11px;flex-wrap:wrap;}
 .ci-fl{display:flex;flex-direction:column;gap:5px;flex:1;min-width:160px;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
 .ci-fl input{background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:13px;text-transform:none;letter-spacing:0;outline:none;transition:border-color .14s;}
@@ -350,12 +354,6 @@ tbody tr:hover{background:var(--panel-2);}
 .empty{padding:40px 20px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;}
 .home-more{padding:11px 16px;font-family:var(--mono);font-size:11.5px;color:var(--accent);cursor:pointer;border-top:1px solid var(--line);}
 .home-more:hover{background:var(--panel-2);}
-.home-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-top:18px;}
-.home-card{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px;cursor:pointer;transition:border-color .14s,background .14s,transform .14s;}
-.home-card:hover{border-color:var(--accent);background:var(--panel-2);transform:translateY(-1px);}
-.home-card .hc-ico{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);flex-shrink:0;}
-.home-card .hc-t{font-size:14px;font-weight:600;color:var(--ink);}
-.home-card .hc-s{font-size:11px;font-family:var(--mono);color:var(--muted);margin-top:2px;}
 
 @media(max-width:980px){ .kpi-row{grid-template-columns:repeat(2,1fr);} .intake-grid,.det-grid,.spec-grid{grid-template-columns:1fr;} }
 @media(max-width:760px){
@@ -736,7 +734,7 @@ function buildSchedule(){
 
   const note=`<p class="sched-note">Source: SharePoint · 03. Operations / 08. Planning · “2026-06-21 - Flower Procurement Schedule SLT.xlsx”. Spend = quantity × $/g; Hydrocarbon pricing is TBD and excluded from totals.</p>`;
 
-  return `<div class="page-head"><div><h2>Flower Procurement Schedule</h2><p>Planned monthly flower purchasing by product line for ${S.yr} — quantity in kilograms and spend at the agreed price per gram.</p></div><div class="sched-badge"><span class="tb">${S.yr} Plan · updated ${S.updated}</span></div></div>${card}${note}`;
+  return `<div class="page-head"><div><h2>Flower Procurement Schedule</h2></div><div class="sched-badge"><span class="tb">${S.yr} Plan · updated ${S.updated}</span></div></div>${card}${note}`;
 }
 
 /* ============================ pages ============================ */
@@ -766,28 +764,10 @@ function showPage(p){
   window.scrollTo(0,0);
 }
 
-function kpis(){
-  const v=LOTS.map(verdict);
-  const total=LOTS.length, await_=v.filter(x=>x.overall==='await').length;
-  const judged=v.filter(x=>x.overall!=='await');
-  const pass=judged.filter(x=>x.overall==='pass').length;
-  const flag=judged.filter(x=>x.overall!=='pass').length;
-  const rate=judged.length?Math.round(pass/judged.length*100):0;
-  return `<div class="kpi-row">
-    <div class="kpi"><div class="kname">Samples tracked</div><div class="big tnum">${total}</div><div class="sub">${suppliers().length} suppliers · ${PTYPES.length} product types</div></div>
-    <div class="kpi ka"><div class="kname">Meets spec</div><div class="big tnum">${pass}</div><div class="sub">${rate}% pass rate of CoAs reviewed</div></div>
-    <div class="kpi kc"><div class="kname">Review / fail</div><div class="big tnum">${flag}</div><div class="sub">need a buyer decision</div></div>
-    <div class="kpi kb"><div class="kname">Awaiting CoA</div><div class="big tnum">${await_}</div><div class="sub">sample in, certificate pending</div></div>
-  </div>`;
-}
-
 function buildHome(){
   const out=LOTS.filter(l=>!l.approval);
-  const approved=LOTS.filter(l=>l.approval==='approved').length;
-  const rejected=LOTS.filter(l=>l.approval==='rejected').length;
-  let h=`<div class="page-head home-head"><div><h2>Welcome</h2><p>Log new flower samples, review their certificates of analysis and decide what to buy. Each lot is judged against your per-product-type spec.</p></div>
+  let h=`<div class="page-head home-head"><div></div>
     <button class="btn-primary" id="addHomeSample">${I.add}Add sample</button></div>`;
-  h+=kpis();
   const top=out.slice(0,6);
   const rows=top.map(l=>`<tr data-lot="${esc(l.id)}">
     <td class="l"><div class="strain">${esc(l.strain)}<span class="s2">${esc(l.id)}</span></div></td>
@@ -800,19 +780,11 @@ function buildHome(){
     <div class="panel-head"><div class="ph-t"><span class="dot" style="background:var(--accent)"></span>Outstanding samples</div><div class="ph-meta">${out.length} awaiting a decision</div></div>
     ${out.length?`<table><thead><tr><th class="l">Lot / strain</th><th class="l">Category</th><th class="l">Supplier</th><th class="l">Verdict</th><th class="l">Decision</th></tr></thead><tbody>${rows}</tbody></table>${out.length>top.length?`<div class="home-more" data-go="library">View all ${out.length} outstanding samples →</div>`:''}`:`<div class="empty">Nothing waiting on you — every sample has been approved or rejected. Use <b>Add sample</b> to log a new one.</div>`}
   </div>`;
-  h+=`<div class="home-cards">
-    <div class="home-card" data-go="library"><span class="hc-ico">${I.lib}</span><div><div class="hc-t">Outstanding</div><div class="hc-s">${out.length} awaiting decision</div></div></div>
-    <div class="home-card" data-go="approved"><span class="hc-ico">${I.ok}</span><div><div class="hc-t">Approved</div><div class="hc-s">${approved} cleared to buy</div></div></div>
-    <div class="home-card" data-go="rejected"><span class="hc-ico">${I.no}</span><div><div class="hc-t">Rejected</div><div class="hc-s">${rejected} passed on</div></div></div>
-    <div class="home-card" data-go="specs"><span class="hc-ico">${I.spec}</span><div><div class="hc-t">Specifications</div><div class="hc-s">Acceptance thresholds</div></div></div>
-    <div class="home-card" data-go="schedule"><span class="hc-ico">${I.cal}</span><div><div class="hc-t">Flower schedule</div><div class="hc-s">Monthly purchasing plan</div></div></div>
-  </div>`;
   return h;
 }
 function buildLibrary(){
   const sups=['all',...suppliers()];
-  let h=`<div class="page-head"><div><h2>Outstanding Samples</h2><p>Samples awaiting your decision — approve or reject each one. Approved and rejected lots move to their own pages.</p></div></div>`;
-  h+=kpis();
+  let h=`<div class="page-head"><div><h2>Outstanding Samples</h2></div></div>`;
   h+=`<div class="toolbar">
     <div class="search">${I.search}<input id="lotSearch" placeholder="Search lot, strain or supplier…" value="${esc(listFilter)}"></div>
     <div class="seg-slider">${sups.map(s=>`<button class="seg ${supFilter===s?'active':''}" data-sup="${esc(s)}">${s==='all'?'All suppliers':esc(s)}</button>`).join('')}</div>
@@ -902,6 +874,14 @@ function buildLot(id){
       ${(l.terp||[]).map(c=>`<div class="kv"><span class="k">${esc(c.n)}</span><span class="v">${num(c.v,2)}%</span></div>`).join('')}
     </div></div>
   </div>`;
+  if(l.micros&&l.micros.length){
+    h+=`<div class="panel"><div class="panel-head"><div class="ph-t">Microbial analysis</div><div class="ph-meta">${l.micros.length} organism${l.micros.length===1?'':'s'} · ${esc(l.lab)}</div></div>
+      <table><thead><tr><th class="l">Organism</th><th class="l">Result</th><th class="l">Status</th></tr></thead><tbody>
+      ${l.micros.map(o=>`<tr style="cursor:default"><td class="l">${esc(o.n)}</td>
+        <td class="l" style="font-family:var(--mono)">${esc(o.v)}</td>
+        <td class="l"><span class="chip ${VC[o.s]||'v-await'}">${o.s==='fail'?'Fail':'Pass'}</span></td></tr>`).join('')}
+      </tbody></table></div>`;
+  }
   h+=`<div class="det-grid">
     <div class="panel"><div class="panel-head"><div class="ph-t">Contaminant panels</div></div><div style="padding:6px 16px 14px">
       ${[['Microbial','micro'],['Pesticides','pest'],['Heavy metals','metals'],['Foreign matter','foreign']].map(([lab,k])=>`<div class="kv"><span class="k">${lab}</span><span class="v" style="color:${l[k]==='fail'?'var(--coral)':'var(--teal-bright)'}">${l[k]?(l[k]==='pass'?'Pass':'Fail'):'—'}</span></div>`).join('')}
@@ -925,10 +905,7 @@ function buildDecision(kind){
   const ls=LOTS.filter(l=>l.approval===kind)
     .sort((a,b)=>(b.approvedAt||'').localeCompare(a.approvedAt||'')||a.supplier.localeCompare(b.supplier));
   const title=isAp?'Approved lots':'Rejected lots';
-  const sub=isAp
-    ?'Lots you\'ve cleared to buy. Approve more from any sample\'s row or its detail page; click the chip to move one back to undecided.'
-    :'Lots you\'ve passed on — kept on record without deleting the certificate. Click the chip to move one back to undecided.';
-  let h=`<div class="page-head"><div><h2>${title}</h2><p>${sub}</p></div></div>`;
+  let h=`<div class="page-head"><div><h2>${title}</h2></div></div>`;
   if(!ls.length)return h+`<div class="panel"><div class="empty">No ${isAp?'approved':'rejected'} lots yet — use <b>${isAp?'Approve':'Reject'}</b> on a sample in <b>Outstanding Samples</b> or on its detail page.</div></div>`;
   h+=`<div class="panel"><table><thead><tr>
     <th class="l">Lot / strain</th><th class="l">Supplier</th><th class="l">Category</th><th>Total THC</th><th>Terpenes</th><th>Buy price</th><th class="l">Verdict</th><th class="l">${isAp?'Approved':'Rejected'}</th><th class="l">Decision</th>
@@ -1054,8 +1031,13 @@ function itemHtml(it){
   if(it.status==='err')
     return `<div class="coa-item" data-item="${it.key}"><div class="ci-head"><span class="ci-icon">${I.doc}</span><span class="ci-file">${esc(it.name)}</span><span class="coa-status err">✕ ${esc(it.msg||'Could not read file')}</span><button type="button" class="row-del" data-del title="Remove">✕</button></div></div>`;
   const v=k=>it[k]!=null?esc(it[k]):'';
+  const files=it.coaFiles||[];
+  const multi=files.length>1;
+  const badge=multi?`<span class="ci-badge">+${files.length-1} more PDF${files.length-1===1?'':'s'}</span>`:'';
+  const fileList=multi?`<div class="ci-files">${files.map(f=>`<span class="ci-fn">${I.doc}${esc(f.name)}</span>`).join('')}</div>`:'';
   return `<div class="coa-item" data-item="${it.key}">
-    <div class="ci-head"><span class="ci-icon">${I.doc}</span><span class="ci-file">${esc(it.name)}</span>${it.lab?`<span class="ci-lab">${esc(it.lab)}</span>`:''}<button type="button" class="row-del" data-del title="Remove this sample">✕</button></div>
+    <div class="ci-head"><span class="ci-icon">${I.doc}</span><span class="ci-file">${esc(multi?files[0].name:it.name)}</span>${badge}${it.lab?`<span class="ci-lab">${esc(it.lab)}</span>`:''}<button type="button" class="row-del" data-del title="Remove this sample">✕</button></div>
+    ${fileList}
     <div class="ci-fields">
       <label class="ci-fl">Cultivar<input data-f="strain" type="text" placeholder="Cultivar" value="${v('strain')}"></label>
       <label class="ci-fl">Lot #<input data-f="id" type="text" placeholder="Lot #" value="${v('id')}"></label>
@@ -1135,6 +1117,21 @@ function syncEdits(){
     card.querySelectorAll('[data-f]').forEach(i=>{ it[i.dataset.f]=i.value.trim()||null; });
   });
 }
+/* PDFs that share a lot number make up one CoA → one sample. Match on the
+   parsed lot # (case-insensitive) and fold the extra PDFs plus any analytes
+   they carry into the first card instead of spawning a duplicate sample. */
+function intakeKeyId(v){ return v==null?'':String(v).trim().toLowerCase(); }
+function mergeIntake(target,src){
+  const names=new Set((target.coaFiles||[]).map(f=>f.name));
+  (src.coaFiles||[]).forEach(f=>{ if(!names.has(f.name)){ target.coaFiles.push(f); names.add(f.name); } });
+  ['id','strain','lab','received','supplier','thc','cbd','moisture','terps'].forEach(k=>{
+    const sv=src[k]; if(sv==null||sv==='')return;
+    if(target[k]==null||target[k]===''||(k==='strain'&&target[k]==='(unnamed)'))target[k]=sv;
+  });
+  ['micro','pest'].forEach(k=>{ const sv=src[k]; if(sv==null)return; if(target[k]==null||sv==='fail')target[k]=sv; });
+  if((!target.micros||!target.micros.length)&&src.micros&&src.micros.length)target.micros=src.micros;
+  return target;
+}
 async function addCoaFiles(fileList){
   const all=[...fileList].filter(Boolean);
   const files=all.filter(f=>/\.pdf$/i.test(f.name||'')||f.type==='application/pdf');
@@ -1153,9 +1150,20 @@ async function addCoaFiles(fileList){
       let parsed={}; try{ parsed=parseCoa(text); }catch(_){}
       Object.assign(it,parsed);
       it.status='ok';
+    }catch(err){ it.status='err'; it.msg=(err&&err.message)||'Could not read file'; patchCard(it); updateLotCount(); continue; }
+    const kid=intakeKeyId(it.id);
+    const tgt=kid?intakeItems.find(x=>x!==it&&x.status==='ok'&&intakeKeyId(x.id)===kid):null;
+    if(tgt){
+      mergeIntake(tgt,it);
+      intakeItems=intakeItems.filter(x=>x!==it);
+      const wrap=$('#coaItems'), card=wrap&&wrap.querySelector(`[data-item="${it.key}"]`); if(card)card.remove();
+      patchCard(tgt);
+      const sf=$('#supField'); if(sf&&!sf.value.trim()&&tgt.supplier)sf.value=tgt.supplier;
+    } else {
+      patchCard(it);
       const sf=$('#supField'); if(sf&&!sf.value.trim()&&it.supplier)sf.value=it.supplier;
-    }catch(err){ it.status='err'; it.msg=(err&&err.message)||'Could not read file'; }
-    patchCard(it); updateLotCount();
+    }
+    updateLotCount();
   }
 }
 function updateLotCount(){
@@ -1169,15 +1177,18 @@ function commitLots(){
   const sup=(($('#supField')&&$('#supField').value)||'').trim();
   const ready=intakeItems.filter(it=>it.status!=='reading'&&it.id&&String(it.id).trim()!=='');
   if(!ready.length){toast('Add a CoA PDF (or type a Lot #) first');return;}
+  /* one sample per lot # — fold any same-lot cards together before writing */
+  const groups=[], byId={};
+  ready.forEach(it=>{ const kid=intakeKeyId(it.id); if(byId[kid])mergeIntake(byId[kid],it); else{byId[kid]=it;groups.push(it);} });
   let added=0,updated=0;
-  ready.forEach(it=>{
+  groups.forEach(it=>{
     const files=it.coaFiles||[];
     const o={
       id:String(it.id).trim(),
       strain:it.strain||'(unnamed)',
       thc:it.thc!=null?+it.thc:null, cbd:it.cbd!=null?+it.cbd:null,
       moisture:it.moisture!=null?+it.moisture:null, terps:it.terps!=null?+it.terps:null,
-      micro:it.micro||null, pest:it.pest||null,
+      micro:it.micro||null, pest:it.pest||null, micros:(it.micros&&it.micros.length)?it.micros:null,
       lab:it.lab||'—',
       received:it.received||new Date().toISOString().slice(0,10),
       coaFiles:files, coaName:(files[0]&&files[0].name)||null, coaData:(files[0]&&files[0].data)||null,
@@ -1247,9 +1258,87 @@ function microStatus(T){
   if(/microbial[\s\S]{0,500}?met specification/i.test(T))return 'pass';
   return null;
 }
+/* Parse the text just after an organism name into {v:displayValue,s:pass|fail}.
+   Handles qualitative results (Absent/Negative/Not detected vs Present/Positive/
+   Detected) and quantitative counts (<10 CFU/g, 5,400 CFU/g, <10 MPN/g). The
+   "(Absent/Present)" legend that some labs print after the method is stripped so
+   it is not mistaken for the result, and limit columns prefixed with ≤ are
+   skipped so the actual measured count is reported, not the spec ceiling. */
+function microCell(win){
+  let w=String(win||'').replace(/\s+/g,' ').replace(/\(?\s*(?:absent\s*\/\s*present|present\s*\/\s*absent)\s*\)?/ig,' ');
+  /* "gram negative" is part of an organism NAME, not a result — neutralise it so
+     a window that spills into the next row's name never reads as Negative. */
+  w=w.replace(/gram[\-\s]?negative/ig,'gram-neg');
+  const cands=[]; let m;
+  /* counts: skip the ≤-prefixed limit column, take the measured value */
+  const cre=/(≤\s*)?(<?\s*[\d,]+(?:\.\d+)?)\s*(CFU|MPN)\s*\/\s*g/ig;
+  while((m=cre.exec(w))){ if(m[1])continue; cands.push({i:m.index,v:m[2].replace(/\s+/g,'')+' '+m[3].toUpperCase()+'/g',s:'pass'}); break; }
+  /* detected / present / positive => fail (but not "not detected") */
+  const dre=/\b(?:present|positive|detected)\b/ig;
+  while((m=dre.exec(w))){ if(/\b(?:not|none)\s+$/i.test(w.slice(0,m.index))){continue;} cands.push({i:m.index,v:'Detected',s:'fail'}); break; }
+  /* absent / negative / not detected => pass */
+  const qre=/\b(absent(?:\s+(?:in|per)\s+[\d.]*\s*\w+)?|negative(?:\s+[\w\-\/]+)?|not\s+detected|none\s+detected)\b/ig;
+  while((m=qre.exec(w))){ let v=m[1].replace(/\s+/g,' ').trim(); cands.push({i:m.index,v:v.charAt(0).toUpperCase()+v.slice(1),s:'pass'}); break; }
+  if(!cands.length)return null;
+  cands.sort((a,b)=>a.i-b.i);
+  return {v:cands[0].v,s:cands[0].s};
+}
+/* Build the full per-organism microbial panel across all lab layouts. Each
+   organism is matched by its many spellings; the first occurrence that yields a
+   parseable result wins (earlier mentions are method/header rows with no value). */
+function microPanel(T){
+  const defs=[
+    ['Total aerobic count',/(?:total\s+)?aerobic\s+(?:microbial|plate)\s+count/ig],
+    ['Yeast & mould',/(?:total\s+)?(?:combined\s+)?yeasts?\s*(?:and|&|\/)\s*(?:mould|mold)s?(?:\s+count)?/ig],
+    ['Bile-tolerant Gram-neg',/bile[\-\s]?tolerant,?\s+gram[\-\s]?negative\s+bacteria/ig],
+    ['E. coli',/escherichia\s+coli|\be\.?\s*coli\b/ig],
+    ['Salmonella',/salmonella(?:\s+spp\.?)?/ig],
+    ['S. aureus',/staphylococcus\s+aureus/ig],
+    ['P. aeruginosa',/pseudomonas\s+aeruginosa/ig],
+  ];
+  const out=[];
+  for(const [n,re] of defs){
+    re.lastIndex=0; let m,cell=null;
+    while((m=re.exec(T))){
+      const start=m.index+m[0].length;
+      const c=microCell(T.slice(start,start+70));
+      if(c){cell=c;break;}
+    }
+    if(cell)out.push({n,v:cell.v,s:cell.s});
+  }
+  return out;
+}
 function pestStatus(T){
   if(/no compounds detected/i.test(T))return 'pass';
   if(/pesticide[\s\S]{0,400}?met specification/i.test(T))return 'pass';
+  return null;
+}
+/* Eurofins layouts vary: some carry the cultivar in "Sample Description"
+   (Experchem), others in "Eurofins Sample Code" (the original template), where
+   "Sample Description" is just a generic matrix like "Dried Flower". Take the
+   first candidate that looks like a real cultivar, not a matrix or lot code. */
+function euStrain(T){
+  const cands=[fstr(T,/Sample Description:\s*([A-Za-z][A-Za-z0-9 '\-]{1,38}?)\s+(?:Sample Reference|Net Weight|Net\b|Lot Number|Condition|Sample Registration|TRG\d)/i),
+               fstr(T,/Eurofins Sample Code:\s+(.+?)\s+[\dA-Z]{2,}-\d{3,}/i)];
+  const generic=/^(dried\s+\w+|bulk\b.*|cannabis|flower|sample|n\/?a)$/i;
+  for(const c of cands){ const v=c&&c.trim(); if(v&&!generic.test(v)&&!/^\d|\d{3,}|FCB|LAB\d/i.test(v))return v; }
+  return (cands[0]||cands[1]||null);
+}
+/* The lot is the same physical batch across the report's split PDFs, so it must
+   normalize identically regardless of two-column text-extraction order. The
+   "Eurofins Sample Code" label sits flush against its value (order-independent),
+   carrying the lot plus a per-document replicate suffix (-LAB1/-LAB2) that we
+   strip. The "Sample Reference" field is unreliable (reads "Net Weight…"), so it
+   is only trusted as a letter-led code (e.g. S60251426) on the older template. */
+function euLot(T){
+  let m=T.match(/Lot Number\b[:\s]*([0-9][A-Za-z0-9\-]{3,})/i);
+  if(m)return m[1].replace(/-(?:LAB|R|REP)\d*$/i,'');
+  m=T.match(/Eurofins Sample Code:\s*([0-9][A-Za-z0-9\-]{3,})/i);
+  if(m)return m[1].replace(/-(?:LAB|R|REP)\d*$/i,'');
+  m=T.match(/Sample Reference\s*:?\s*([A-Za-z][A-Za-z0-9]{4,})/i);
+  if(m)return m[1];
+  m=T.match(/Client Sample Code:\s*([0-9][A-Za-z0-9\-]{3,})/i);
+  if(m)return m[1].replace(/-(?:LAB|R|REP)\d*$/i,'');
   return null;
 }
 const PARSERS={
@@ -1261,7 +1350,7 @@ const PARSERS={
     moisture:fnum(T,/Loss on Drying\s+<?\s*[\d.]+\s+([\d.]+)/i),
     terps:fnum(T,/Total Terpenes\s+Report\s+\S+\s+([\d.]+)/i),
     received:normDate(fstr(T,/Date Sample Received\s+([\d\-]{8,10})/i)),
-    micro:microStatus(T),pest:pestStatus(T),supplier:null,
+    micros:microPanel(T),micro:microStatus(T),pest:pestStatus(T),supplier:null,
   }),
   'A&L Canada':T=>({
     strain:fstr(T,/STRAIN:\s*(.+?)\s+DATE/i),
@@ -1271,17 +1360,17 @@ const PARSERS={
     moisture:null,
     terps:fnum(T,/Total Terpenes\s*\([^)]*\)\s+([\d.]+)/i),
     received:normDate(fstr(T,/DATE RECEIVED:\s*([\d\-]{8,10})/i)),
-    micro:microStatus(T),pest:pestStatus(T),supplier:null,
+    micros:microPanel(T),micro:microStatus(T),pest:pestStatus(T),supplier:null,
   }),
   'Eurofins':T=>({
-    strain:fstr(T,/Eurofins Sample Code:\s+(.+?)\s+[\dA-Z]{2,}-\d{3,}/i),
-    id:fstr(T,/Sample Reference\s*:?\s*([A-Za-z0-9]+)/i),
+    strain:euStrain(T),
+    id:euLot(T),
     thc:fnum(T,/Total THC - %w\/w \(as-is\)\s+([\d.]+)/i)||fnum(T,/Total THC - %w\/w \(Anhydrous\)\s+([\d.]+)/i),
-    cbd:fnum(T,/Total CBD - %w\/w \(as-is\)\s+([\d.]+)/i),
+    cbd:fnum(T,/Total CBD - %w\/w \(as-is\)\s+([\d.]+)/i)||fnum(T,/Total CBD - %w\/w \(Anhydrous\)\s+([\d.]+)/i),
     moisture:fnum(T,/Loss on drying\s+([\d.]+)\s*%/i),
     terps:fnum(T,/Total Terpenes\s*\([^)]*\)\s+([\d.]+)/i),
     received:normDate(fstr(T,/Received On:\s*([0-9]{1,2}[A-Za-z]{3}[0-9]{4})/i)),
-    micro:microStatus(T),pest:pestStatus(T),supplier:null,
+    micros:microPanel(T),micro:microStatus(T),pest:pestStatus(T),supplier:null,
   }),
   'Pathogenia':T=>({
     strain:null,
@@ -1290,7 +1379,7 @@ const PARSERS={
     cbd:fnum(T,/Total CBD\s+[\d.]+\s+([\d.]+)\s+[\d.]+/i),
     moisture:null,terps:null,
     received:normDate(fstr(T,/Sample Receiving Date\s*:?\s*([\dA-Za-z\-]+)/i)),
-    micro:microStatus(T),pest:pestStatus(T),supplier:null,
+    micros:microPanel(T),micro:microStatus(T),pest:pestStatus(T),supplier:null,
   }),
   'High North':T=>({
     strain:fstr(T,/Product:\s*(.+?)(?:\s+\d|\s+Lot:|\s+Matrix:)/i),
@@ -1300,7 +1389,7 @@ const PARSERS={
     moisture:fnum(T,/Loss on Drying\s*\([^)]*\)\s*([\d.]+)/i),
     terps:fnum(T,/Total Terpenes\s*\([^)]*\)?\s*[\d.]*\s*([\d.]+)/i),
     received:normDate(fstr(T,/Received:\s*([\d\-]{8,10})/i)),
-    micro:microStatus(T),pest:pestStatus(T),
+    micros:microPanel(T),micro:microStatus(T),pest:pestStatus(T),
     supplier:fstr(T,/Client:\s*[~\s]*(.+?)\s+Product:/i)||fstr(T,/Name:\s*(.+?)\s+Matrix:/i),
   }),
 };
@@ -1316,7 +1405,7 @@ function parseCoa(rawText){
     o.cbd=fnum(T,/total\s*cbd[^\d%]*?([\d.]+)\s*%/i);
     o.moisture=fnum(T,/(?:loss\s*on\s*drying|moisture)[^\d%]*?([\d.]+)\s*%/i);
     o.terps=fnum(T,/total\s*terpenes?[^\d%]*?([\d.]+)\s*%/i);
-    o.micro=microStatus(T); o.pest=pestStatus(T); o.supplier=null;
+    o.micros=microPanel(T); o.micro=microStatus(T); o.pest=pestStatus(T); o.supplier=null;
   }
   Object.keys(o).forEach(k=>{ if(o[k]===''||o[k]===undefined)o[k]=null; });
   return o;
