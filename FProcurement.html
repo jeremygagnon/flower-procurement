@@ -293,6 +293,26 @@ tbody tr:hover{background:var(--panel-2);}
 .coa-add:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-1px);}
 .coa-add svg{width:14px;height:14px;}
 .coa-add.busy{opacity:.6;pointer-events:none;}
+.coa-docs-btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12.5px;font-weight:700;color:#fff;background:var(--accent);border:1px solid var(--accent);border-radius:9px;padding:8px 13px;cursor:pointer;box-shadow:0 2px 12px color-mix(in srgb,var(--accent) 32%,transparent);transition:filter .14s,transform .14s;}
+.coa-docs-btn:hover{filter:brightness(1.07);transform:translateY(-1px);}
+.coa-docs-btn svg{width:14px;height:14px;}
+.coa-modal{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;background:color-mix(in srgb,#000 55%,transparent);backdrop-filter:blur(2px);animation:coaFade .14s ease;}
+@keyframes coaFade{from{opacity:0;}to{opacity:1;}}
+.coa-modal-card{width:100%;max-width:460px;background:var(--panel);border:1px solid var(--line-2);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden;}
+.coa-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);}
+.cm-t{font-family:var(--font);font-weight:800;font-size:16px;color:var(--ink);}
+.cm-s{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:3px;}
+.coa-modal-x{flex:none;width:30px;height:30px;border-radius:8px;border:1px solid var(--line-2);background:var(--inset);color:var(--ink-2);font-size:14px;cursor:pointer;transition:background .14s,color .14s,border-color .14s;}
+.coa-modal-x:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.coa-modal-list{display:flex;flex-direction:column;gap:8px;padding:16px 18px;max-height:60vh;overflow:auto;}
+.coa-doc-row{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:var(--inset);font-family:var(--mono);font-size:12.5px;color:var(--ink);text-decoration:none;cursor:pointer;transition:border-color .14s,transform .14s;}
+.coa-doc-row:hover{border-color:var(--accent);transform:translateY(-1px);}
+.coa-doc-row svg{width:16px;height:16px;color:var(--accent);flex:none;}
+.cdr-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cdr-dl{flex:none;font-size:11px;font-weight:700;color:var(--accent);}
+.coa-doc-row.is-empty{opacity:.5;cursor:default;}
+.coa-doc-row.is-empty:hover{border-color:var(--line);transform:none;}
+.coa-doc-row.is-empty .cdr-dl{color:var(--muted);}
 .coa-replace{margin-left:6px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:13px;vertical-align:middle;transition:color .14s,border-color .14s;}
 .coa-replace:hover{color:var(--accent);border-color:var(--accent);}
 .coa-tip{position:fixed;z-index:200;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.35);padding:10px 12px;min-width:168px;pointer-events:none;font-family:var(--font);}
@@ -767,6 +787,7 @@ function buildSchedule(){
 
 /* ============================ pages ============================ */
 function showPage(p){
+  closeCoaModal();
   curPage=p; let r;
   if(p==='home')r=buildHome();
   else if(p==='library')r=buildLibrary();
@@ -1367,13 +1388,49 @@ async function extractPdfText(file){
   return text.trim();
 }
 function fileToDataUrl(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('Could not read file'));r.readAsDataURL(file);});}
+function coaFilesOf(l){
+  return (l.coaFiles&&l.coaFiles.length)?l.coaFiles:(l.coaData?[{name:l.coaName||'coa.pdf',data:l.coaData}]:[]);
+}
 function coaLinksHtml(l){
-  const files=(l.coaFiles&&l.coaFiles.length)?l.coaFiles:(l.coaData?[{name:l.coaName||'coa.pdf',data:l.coaData}]:[]);
+  const files=coaFilesOf(l);
   const dl=files.filter(f=>f.data);
-  let h=dl.map(f=>`<a class="coa-link" href="${f.data}" download="${esc(f.name||'coa.pdf')}">${I.doc}<span class="coa-name">${esc(f.name||'Download')}</span></a>`).join(' ');
-  if(l.coaUrl&&!dl.length)h+=`<a class="coa-link" href="${esc(l.coaUrl)}" target="_blank" rel="noopener">${I.doc}<span class="coa-name">${esc(l.coaName||'View CoA in SharePoint')}</span></a>`;
-  else if(!dl.length&&files.length)h+=files.map(f=>`<span class="coa-link" style="opacity:.55;cursor:default">${I.doc}<span class="coa-name">${esc(f.name||'CoA')}</span></span>`).join(' ');
-  return h;
+  // two or more certificates collapse into one button that opens the chooser window
+  if(files.length>=2)
+    return `<button type="button" class="coa-docs-btn" data-coa-docs="${esc(l.id)}" title="View the ${files.length} certificates on this sample">${I.doc}${files.length} documents</button>`;
+  // a single certificate stays a direct download pill
+  if(dl.length===1)
+    return `<a class="coa-link" href="${dl[0].data}" download="${esc(dl[0].name||'coa.pdf')}">${I.doc}<span class="coa-name">${esc(dl[0].name||'Download')}</span></a>`;
+  if(l.coaUrl)
+    return `<a class="coa-link" href="${esc(l.coaUrl)}" target="_blank" rel="noopener">${I.doc}<span class="coa-name">${esc(l.coaName||'View CoA in SharePoint')}</span></a>`;
+  if(files.length===1)
+    return `<span class="coa-link" style="opacity:.55;cursor:default">${I.doc}<span class="coa-name">${esc(files[0].name||'CoA')}</span></span>`;
+  return '';
+}
+let _coaModalKey=null;
+function closeCoaModal(){ const m=$('#coaModal'); if(m)m.remove(); if(_coaModalKey){document.removeEventListener('keydown',_coaModalKey);_coaModalKey=null;} }
+/* Chooser window for a sample's certificates: one row per attached PDF, each a
+   direct download (dim if the file has no stored data). Opened from the collapsed
+   "N documents" button so multiple CoAs don't crowd the sample page. */
+function openCoaDocs(id){
+  const l=LOTS.find(x=>x.id===id); if(!l)return;
+  const files=coaFilesOf(l);
+  const rows=files.map(f=>f.data
+    ?`<a class="coa-doc-row" href="${f.data}" download="${esc(f.name||'coa.pdf')}">${I.doc}<span class="cdr-name">${esc(f.name||'Download')}</span><span class="cdr-dl">Download</span></a>`
+    :`<span class="coa-doc-row is-empty">${I.doc}<span class="cdr-name">${esc(f.name||'CoA')}</span><span class="cdr-dl">No file</span></span>`
+  ).join('');
+  const urlRow=(l.coaUrl&&!files.some(f=>f.data))?`<a class="coa-doc-row" href="${esc(l.coaUrl)}" target="_blank" rel="noopener">${I.doc}<span class="cdr-name">${esc(l.coaName||'View CoA in SharePoint')}</span><span class="cdr-dl">Open</span></a>`:'';
+  closeCoaModal();
+  const wrap=document.createElement('div');
+  wrap.className='coa-modal'; wrap.id='coaModal';
+  wrap.innerHTML=`<div class="coa-modal-card" role="dialog" aria-modal="true" aria-label="Certificates for ${esc(l.strain)}">
+    <div class="coa-modal-head"><div><div class="cm-t">Certificates</div><div class="cm-s">${esc(l.strain)} · ${esc(l.id)} · ${files.length} document${files.length===1?'':'s'}</div></div>
+      <button type="button" class="coa-modal-x" data-coa-close aria-label="Close">✕</button></div>
+    <div class="coa-modal-list">${rows}${urlRow}</div>
+  </div>`;
+  wrap.addEventListener('click',e=>{ if(e.target===wrap||e.target.closest('[data-coa-close]'))closeCoaModal(); });
+  document.body.appendChild(wrap);
+  _coaModalKey=e=>{ if(e.key==='Escape')closeCoaModal(); };
+  document.addEventListener('keydown',_coaModalKey);
 }
 /* ---- lab-aware CoA parser (validated against Vivariant / A&L / Eurofins / Pathogenia / High North) ---- */
 function detectLab(T){
@@ -1632,6 +1689,8 @@ $('#nav').addEventListener('click',e=>{
   if(it.dataset.page)showPage(it.dataset.page);
 });
 $('#main').addEventListener('click',e=>{
+  const docs=e.target.closest('[data-coa-docs]');
+  if(docs){openCoaDocs(docs.dataset.coaDocs);return;}
   const dec=e.target.closest('[data-decide]');
   if(dec){e.stopPropagation();decide(dec.dataset.id,dec.dataset.decide);return;}
   const go=e.target.closest('[data-go]');
