@@ -961,7 +961,7 @@ function buildLot(id){
   const aw=l.status==='awaiting';
   const ageMo=coaAgeMonths(l), ageTier=ageMo!=null?coaAgeTier(ageMo):null;
   let h=`<div class="back" data-go="${esc(lotFrom||'library')}">← Back</div><input type="file" id="lotPdfInput" accept="application/pdf" multiple style="display:none">`;
-  const coaInline=`${coaLinksHtml(l)||`<span class="lot-tag coa-none-tag"><i>CoA</i>No PDF</span>`}<button type="button" class="coa-add" data-coa-add="${esc(l.id)}" title="Attach more CoA PDFs to this sample">${I.add}Add PDF</button>`;
+  const coaInline=coaRowHtml(l);
   const verdictPill=`<span class="verdict-pill vb-${v.overall}"${v.reasons.length?` title="${esc(v.reasons.join(' · '))}"`:''}>${esc(v.label)}</span>`;
   const statusEl=aw?verdictPill:`${verdictPill}<div class="lot-appr">${apprCell(l)}</div>`;
   h+=`<div class="page-head lot-head"><div class="lot-head-l"><h2>${esc(l.strain)}</h2></div><span class="lot-status">${statusEl}</span></div>`;
@@ -1178,9 +1178,13 @@ function wireHome(){
 }
 function wireLot(){
   const input=$('#lotPdfInput'); if(!input)return;
-  const btn=$('#main').querySelector('[data-coa-add]');
-  if(btn)btn.addEventListener('click',()=>input.click());
+  const bindAdd=()=>{ const btn=$('#main').querySelector('[data-coa-add]'); if(btn)btn.addEventListener('click',()=>input.click()); };
+  bindAdd();
   input.addEventListener('change',()=>{const fs=[...input.files]; input.value=''; if(fs.length)addPdfsToLot(curLot,fs);});
+  // a single attached PDF renders as a direct download pill — refill its bytes from
+  // IndexedDB (stripped from localStorage) so the link works after a reload
+  const l=LOTS.find(x=>x.id===curLot);
+  if(l)hydrateLotPdfs(l).then(changed=>{ if(!changed||curLot!==l.id)return; const row=$('#main .coa-row'); if(row){ row.innerHTML=coaRowHtml(l); bindAdd(); } });
 }
 function wireLibrary(){
   const s=$('#lotSearch'); if(s)s.addEventListener('input',()=>{listFilter=s.value;$('#libBody').innerHTML=libView==='stats'?libStats():libBody();});
@@ -1329,6 +1333,7 @@ async function addPdfsToLot(id,fileList){
   }
   l.coaName=l.coaName||(l.coaFiles[0]&&l.coaFiles[0].name)||null;
   l.coaData=l.coaData||(l.coaFiles[0]&&l.coaFiles[0].data)||null;
+  await savePdfBytes(id,l.coaFiles);   // keep the bytes in IndexedDB; localStorage strips them
   if(l.status==='awaiting'&&(l.coaData||l.thc!=null||l.micro))l.status='received';
   if(l.status==='received'){
     if(!l.cann||!l.cann.length)l.cann=cann(l.thc||0,l.cbd||0,ACTIVATED(l.ptype));
@@ -1370,6 +1375,7 @@ function commitLots(){
     if(o.status==='received'){o.cann=cann(o.thc||0,o.cbd||0,ACTIVATED(o.ptype));o.terp=terp(o.terps||0);}
     const ix=LOTS.findIndex(l=>l.id===o.id);
     if(ix>=0){LOTS[ix]=o;updated++;} else {LOTS.unshift(o);added++;}
+    savePdfBytes(o.id,o.coaFiles);   // durably store the bytes; coa.lots keeps only metadata
   });
   const ok=saveLots();
   const parts=[]; if(added)parts.push(added+' added'); if(updated)parts.push(updated+' updated');
@@ -1388,6 +1394,45 @@ async function extractPdfText(file){
   return text.trim();
 }
 function fileToDataUrl(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('Could not read file'));r.readAsDataURL(file);});}
+/* ---- durable PDF byte store (IndexedDB) ----
+   localStorage can't hold the base64 certificate bytes (1–2 MB each blows the
+   ~5 MB quota), so they're stripped from coa.lots before every save. We keep the
+   bytes in IndexedDB instead — keyed by lotId|filename — and rehydrate them on
+   demand so the View/Download links keep working after a reload. */
+const PDF_DB='coaPdfs', PDF_STORE='pdfs'; let _pdfDBP=null;
+function pdfDB(){
+  if(_pdfDBP)return _pdfDBP;
+  _pdfDBP=new Promise((res,rej)=>{
+    let rq; try{ rq=indexedDB.open(PDF_DB,1); }catch(e){ return rej(e); }
+    rq.onupgradeneeded=()=>{ const db=rq.result; if(!db.objectStoreNames.contains(PDF_STORE))db.createObjectStore(PDF_STORE); };
+    rq.onsuccess=()=>res(rq.result);
+    rq.onerror=()=>rej(rq.error);
+  });
+  _pdfDBP.catch(()=>{});
+  return _pdfDBP;
+}
+function pdfKey(id,name){ return String(id)+'|'+String(name||''); }
+async function pdfPut(id,name,data){
+  if(!data)return;
+  try{ const db=await pdfDB(); await new Promise((res,rej)=>{ const tx=db.transaction(PDF_STORE,'readwrite'); tx.objectStore(PDF_STORE).put(data,pdfKey(id,name)); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); }); }catch(_){}
+}
+async function pdfGet(id,name){
+  try{ const db=await pdfDB(); return await new Promise((res,rej)=>{ const tx=db.transaction(PDF_STORE,'readonly'); const rq=tx.objectStore(PDF_STORE).get(pdfKey(id,name)); rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>rej(rq.error); }); }catch(_){ return null; }
+}
+async function savePdfBytes(id,files){ for(const f of (files||[])) if(f&&f.data) await pdfPut(id,f.name,f.data); }
+/* refill any coaFiles[].data that was stripped on save, pulling the bytes back
+   from IndexedDB. returns true if at least one file got its bytes restored. */
+async function hydrateLotPdfs(l){
+  if(!l||!l.coaFiles||!l.coaFiles.length)return false;
+  let changed=false;
+  for(const f of l.coaFiles){
+    if(f.data||!f.name)continue;
+    const d=await pdfGet(l.id,f.name);
+    if(d){ f.data=d; changed=true; }
+  }
+  if(changed&&!l.coaData&&l.coaFiles[0])l.coaData=l.coaFiles[0].data||l.coaData;
+  return changed;
+}
 function coaFilesOf(l){
   return (l.coaFiles&&l.coaFiles.length)?l.coaFiles:(l.coaData?[{name:l.coaName||'coa.pdf',data:l.coaData}]:[]);
 }
@@ -1406,13 +1451,17 @@ function coaLinksHtml(l){
     return `<span class="coa-link" style="opacity:.55;cursor:default">${I.doc}<span class="coa-name">${esc(files[0].name||'CoA')}</span></span>`;
   return '';
 }
+function coaRowHtml(l){
+  return `${coaLinksHtml(l)||`<span class="lot-tag coa-none-tag"><i>CoA</i>No PDF</span>`}<button type="button" class="coa-add" data-coa-add="${esc(l.id)}" title="Attach more CoA PDFs to this sample">${I.add}Add PDF</button>`;
+}
 let _coaModalKey=null;
 function closeCoaModal(){ const m=$('#coaModal'); if(m)m.remove(); if(_coaModalKey){document.removeEventListener('keydown',_coaModalKey);_coaModalKey=null;} }
 /* Chooser window for a sample's certificates: one row per attached PDF, each a
    direct download (dim if the file has no stored data). Opened from the collapsed
    "N documents" button so multiple CoAs don't crowd the sample page. */
-function openCoaDocs(id){
+async function openCoaDocs(id){
   const l=LOTS.find(x=>x.id===id); if(!l)return;
+  await hydrateLotPdfs(l);   // pull any stripped bytes back from IndexedDB so each row downloads
   const files=coaFilesOf(l);
   const rows=files.map(f=>f.data
     ?`<a class="coa-doc-row" href="${f.data}" download="${esc(f.name||'coa.pdf')}">${I.doc}<span class="cdr-name">${esc(f.name||'Download')}</span><span class="cdr-dl">Download</span></a>`
