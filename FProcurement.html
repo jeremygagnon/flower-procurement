@@ -1159,7 +1159,7 @@ function wireLot(){
   const input=$('#lotPdfInput'); if(!input)return;
   const btn=$('#main').querySelector('[data-coa-add]');
   if(btn)btn.addEventListener('click',()=>input.click());
-  input.addEventListener('change',()=>{const fs=input.files; input.value=''; if(fs&&fs.length)addPdfsToLot(curLot,fs);});
+  input.addEventListener('change',()=>{const fs=[...input.files]; input.value=''; if(fs.length)addPdfsToLot(curLot,fs);});
 }
 function wireLibrary(){
   const s=$('#lotSearch'); if(s)s.addEventListener('input',()=>{listFilter=s.value;$('#libBody').innerHTML=libView==='stats'?libStats():libBody();});
