@@ -107,6 +107,24 @@ a{color:inherit;}
 .seg.active{color:#fff;background:var(--accent);}
 :root[data-theme="light"] .seg.active{color:#fff;}
 
+/* supplier stats view */
+.stats-body{padding:4px 16px 16px;}
+.stat-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0 14px;}
+.stat-tile{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;}
+.st-k{font-size:9.5px;font-weight:700;font-family:var(--mono);letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);}
+.st-v{font-size:27px;font-weight:700;font-family:var(--mono);line-height:1;letter-spacing:-0.01em;margin-top:10px;}
+.st-v.accent{color:var(--accent);} .st-v.lav{color:var(--lav);}
+.st-s{font-size:10px;font-family:var(--mono);color:var(--muted);margin-top:9px;}
+.spark-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.spark-card{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:12px 15px 9px;}
+.spark-head{display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:9.5px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.spark-last{font-weight:700;font-size:12px;}
+.spark-last.accent{color:var(--accent);} .spark-last.lav{color:var(--lav);}
+.spark{width:100%;height:70px;display:block;}
+.spark-empty,.spark-note{font-family:var(--mono);font-size:10.5px;color:var(--faint);text-align:center;}
+.spark-empty{padding:24px 0;} .spark-note{padding:5px 0 2px;}
+.stats-table tbody tr{cursor:pointer;}
+
 /* panels + table */
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:20px;}
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;background:var(--panel-2);border-bottom:1px solid var(--line);}
@@ -523,7 +541,7 @@ if(_coaFix)save('coa.lots',LOTS);
 /* one-time: rewrite any previously-stored lots without their base64 PDF bytes
    so the localStorage quota is reclaimed and specs/edits can persist again */
 if(!load('coa.slimPdf','')){ save('coa.lots',LOTS.map(slimLot)); save('coa.slimPdf','1'); }
-let curPage='home', curLot=null, listFilter='', supFilter='all', curSpecType=PTYPES[0], intakeType=PTYPES[0], lotFrom='library';
+let curPage='home', curLot=null, listFilter='', supFilter='all', curSpecType=PTYPES[0], intakeType=PTYPES[0], lotFrom='library', libView=load('coa.libView','samples');
 let intakeItems=[], intakeSeq=0, intakeFrom='home';
 
 /* Persist lot metadata only — never the base64 PDF bytes. Storing the
@@ -645,16 +663,16 @@ function renderNav(){
     const act=(curPage==='type:'+t||curPage==='intake:'+t)?'active':'';
     h+=`<div class="nav-item ${act}" data-spectype="${esc(t)}"><span class="dot" style="background:${PCOLOR[t]}"></span>${esc(PSHORT[t]||t)}<span class="ni-count">${n}</span></div>`;
   });
-  h+=`<div class="nav-sec">Suppliers</div>`;
-  suppliers().forEach(s=>{
-    const n=LOTS.filter(l=>l.supplier===s).length;
-    h+=`<div class="nav-item ${supFilter===s&&curPage==='library'?'active':''}" data-sup="${esc(s)}"><span class="dot" style="background:var(--accent)"></span>${esc(s)}<span class="ni-count">${n}</span></div>`;
-  });
   h+=`<div class="nav-sec">Review</div>`;
   h+=item('library','Outstanding samples',I.lib,LOTS.filter(l=>!l.approval).length);
   h+=item('approved','Approved lots',I.ok,LOTS.filter(l=>l.approval==='approved').length);
   h+=item('rejected','Rejected lots',I.no,LOTS.filter(l=>l.approval==='rejected').length);
   h+=item('specs','Specifications',I.spec,null);
+  h+=`<div class="nav-sec">Suppliers</div>`;
+  suppliers().forEach(s=>{
+    const n=LOTS.filter(l=>l.supplier===s).length;
+    h+=`<div class="nav-item ${supFilter===s&&curPage==='library'?'active':''}" data-sup="${esc(s)}"><span class="dot" style="background:var(--accent)"></span>${esc(s)}<span class="ni-count">${n}</span></div>`;
+  });
   h+=`<div class="nav-sec">Planning</div>`;
   h+=item('schedule','Flower schedule',I.cal,null);
   $('#nav').innerHTML=h;
@@ -800,12 +818,17 @@ function buildHome(){
 }
 function buildLibrary(){
   const sups=['all',...suppliers()];
-  let h=`<div class="page-head"><div><h2>Outstanding Samples</h2></div></div>`;
+  const title=supFilter==='all'?'Outstanding Samples':esc(supFilter);
+  let h=`<div class="page-head"><div><h2>${title}</h2></div>
+    <div class="seg-slider lib-views">
+      <button class="seg ${libView==='samples'?'active':''}" data-libview="samples">Samples</button>
+      <button class="seg ${libView==='stats'?'active':''}" data-libview="stats">Stats</button>
+    </div></div>`;
   h+=`<div class="toolbar">
     <div class="search">${I.search}<input id="lotSearch" placeholder="Search lot, strain or supplier…" value="${esc(listFilter)}"></div>
     <div class="seg-slider">${sups.map(s=>`<button class="seg ${supFilter===s?'active':''}" data-sup="${esc(s)}">${s==='all'?'All suppliers':esc(s)}</button>`).join('')}</div>
   </div>`;
-  h+=`<div id="libBody">${libBody()}</div>`;
+  h+=`<div id="libBody">${libView==='stats'?libStats():libBody()}</div>`;
   return h;
 }
 function libBody(){
@@ -843,6 +866,70 @@ function libBody(){
         <td class="l">${apprCell(l)}</td>
       </tr>`;}).join('')}
       </tbody></table>
+    </div>`;
+  }).join('');
+}
+function sparkline(pts,color){
+  const W=320,H=70,pad=10;
+  if(!pts.length)return `<div class="spark-empty">No data yet</div>`;
+  if(pts.length===1)return `<svg class="spark" viewBox="0 0 ${W} ${H}"><circle cx="${W/2}" cy="${H/2}" r="3.5" fill="${color}"/></svg><div class="spark-note">One sample — the trend fills in as more CoAs are logged.</div>`;
+  const ts=pts.map(p=>p.t),vs=pts.map(p=>p.v);
+  const tmin=Math.min(...ts),tmax=Math.max(...ts),vmin=Math.min(...vs),vmax=Math.max(...vs);
+  const sx=t=>pad+(tmax===tmin?0.5:(t-tmin)/(tmax-tmin))*(W-2*pad);
+  const sy=v=>{const r=vmax===vmin?0.5:(v-vmin)/(vmax-vmin);return H-pad-r*(H-2*pad);};
+  const line=pts.map(p=>`${sx(p.t).toFixed(1)},${sy(p.v).toFixed(1)}`).join(' ');
+  const area=`${pad.toFixed(1)},${(H-pad).toFixed(1)} ${line} ${(W-pad).toFixed(1)},${(H-pad).toFixed(1)}`;
+  const first=pts[0],last=pts[pts.length-1];
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}">
+    <polyline points="${area}" fill="${color}" opacity="0.10"/>
+    <polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${sx(first.t).toFixed(1)}" cy="${sy(first.v).toFixed(1)}" r="2.4" fill="${color}" opacity="0.45"/>
+    <circle cx="${sx(last.t).toFixed(1)}" cy="${sy(last.v).toFixed(1)}" r="3.4" fill="${color}"/>
+  </svg>`;
+}
+function libStats(){
+  let rows=LOTS.filter(l=>l.status!=='awaiting');
+  if(supFilter!=='all')rows=rows.filter(l=>l.supplier===supFilter);
+  const q=listFilter.trim().toLowerCase();
+  if(q)rows=rows.filter(l=>(l.id+' '+l.strain+' '+l.supplier).toLowerCase().includes(q));
+  const groups={}; rows.forEach(l=>{(groups[l.supplier]=groups[l.supplier]||[]).push(l);});
+  const keys=Object.keys(groups).sort();
+  if(!keys.length){
+    if(!LOTS.length)return `<div class="panel"><div class="empty">No samples yet — add a sample to start building potency &amp; moisture history.</div></div>`;
+    return `<div class="panel"><div class="empty">No received samples${supFilter!=='all'?` from ${esc(supFilter)}`:''} yet — stats appear once a CoA has been parsed.</div></div>`;
+  }
+  const pT=d=>{const t=Date.parse(d);return isNaN(t)?null:t;};
+  const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+  const pct=v=>v==null?'—':v.toFixed(1)+'%';
+  const rng=a=>a.length?`${Math.min(...a).toFixed(1)}–${Math.max(...a).toFixed(1)}%`:'—';
+  return keys.map(s=>{
+    const ls=groups[s].slice().sort((a,b)=>(a.received||'').localeCompare(b.received||''));
+    const thcPts=ls.filter(l=>l.thc!=null&&pT(l.received)!=null).map(l=>({t:pT(l.received),v:+l.thc}));
+    const moiPts=ls.filter(l=>l.moisture!=null&&pT(l.received)!=null).map(l=>({t:pT(l.received),v:+l.moisture}));
+    const thcV=thcPts.map(p=>p.v),moiV=moiPts.map(p=>p.v);
+    const hist=ls.slice().reverse();
+    return `<div class="panel stats-panel">
+      <div class="panel-head"><div class="ph-t"><span class="dot" style="background:var(--accent)"></span>${esc(s)}</div><div class="ph-meta">${ls.length} sample${ls.length>1?'s':''} · potency &amp; moisture history</div></div>
+      <div class="stats-body">
+        <div class="stat-tiles">
+          <div class="stat-tile"><div class="st-k">Samples</div><div class="st-v">${ls.length}</div><div class="st-s">received with a CoA</div></div>
+          <div class="stat-tile"><div class="st-k">Avg potency</div><div class="st-v accent">${pct(avg(thcV))}</div><div class="st-s">Total THC ${rng(thcV)}</div></div>
+          <div class="stat-tile"><div class="st-k">Avg moisture</div><div class="st-v lav">${pct(avg(moiV))}</div><div class="st-s">range ${rng(moiV)}</div></div>
+        </div>
+        <div class="spark-row">
+          <div class="spark-card"><div class="spark-head"><span>Total THC over time</span><span class="spark-last accent">${thcV.length?thcV[thcV.length-1].toFixed(1)+'%':'—'}</span></div>${sparkline(thcPts,'var(--accent)')}</div>
+          <div class="spark-card"><div class="spark-head"><span>Moisture over time</span><span class="spark-last lav">${moiV.length?moiV[moiV.length-1].toFixed(1)+'%':'—'}</span></div>${sparkline(moiPts,'var(--lav)')}</div>
+        </div>
+        <table class="stats-table"><thead><tr><th class="l">Received</th><th class="l">Lot / strain</th><th class="l">Category</th><th>Total THC</th><th>Moisture</th></tr></thead><tbody>
+        ${hist.map(l=>`<tr data-lot="${esc(l.id)}">
+          <td class="l">${esc(l.received||'—')}</td>
+          <td class="l"><div class="strain">${esc(l.strain)}<span class="s2">${esc(l.id)}</span></div></td>
+          <td class="l"><span class="catdot"><span class="dot" style="background:${PCOLOR[l.ptype]||'var(--muted)'}"></span>${esc(PSHORT[l.ptype]||l.ptype)}</span></td>
+          <td>${num(l.thc)}${l.thc!=null?'%':''}</td>
+          <td>${num(l.moisture)}${l.moisture!=null?'%':''}</td>
+        </tr>`).join('')}
+        </tbody></table>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1075,8 +1162,9 @@ function wireLot(){
   input.addEventListener('change',()=>{const fs=input.files; input.value=''; if(fs&&fs.length)addPdfsToLot(curLot,fs);});
 }
 function wireLibrary(){
-  const s=$('#lotSearch'); if(s)s.addEventListener('input',()=>{listFilter=s.value;$('#libBody').innerHTML=libBody();});
+  const s=$('#lotSearch'); if(s)s.addEventListener('input',()=>{listFilter=s.value;$('#libBody').innerHTML=libView==='stats'?libStats():libBody();});
   $('#main').querySelectorAll('.seg[data-sup]').forEach(b=>b.addEventListener('click',()=>{supFilter=b.dataset.sup;showPage('library');}));
+  $('#main').querySelectorAll('.seg[data-libview]').forEach(b=>b.addEventListener('click',()=>{libView=b.dataset.libview;save('coa.libView',libView);showPage('library');}));
 }
 function wireType(){
   {const a=$('#addTypeSample'); if(a)a.addEventListener('click',()=>showPage('intake:'+curSpecType));}
@@ -1153,7 +1241,13 @@ function mergeIntake(target,src){
     if(target[k]==null||target[k]===''||(k==='strain'&&target[k]==='(unnamed)'))target[k]=sv;
   });
   ['micro','pest'].forEach(k=>{ const sv=src[k]; if(sv==null)return; if(target[k]==null||sv==='fail')target[k]=sv; });
-  if((!target.micros||!target.micros.length)&&src.micros&&src.micros.length)target.micros=src.micros;
+  /* union the per-organism panel so a split CoA (aerobic+yeast on one part,
+     salmonella+E.coli on another) keeps every organism; a fail anywhere wins */
+  if(src.micros&&src.micros.length){
+    const by={}; (target.micros||[]).forEach(o=>{by[o.n]=o;});
+    src.micros.forEach(o=>{ const e=by[o.n]; if(!e)by[o.n]=o; else if(o.s==='fail'&&e.s!=='fail')by[o.n]=o; });
+    target.micros=Object.values(by);
+  }
   return target;
 }
 async function addCoaFiles(fileList){
