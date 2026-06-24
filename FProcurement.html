@@ -310,6 +310,11 @@ tbody tr:hover{background:var(--panel-2);}
 .coa-doc-row svg{width:16px;height:16px;color:var(--accent);flex:none;}
 .cdr-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cdr-dl{flex:none;font-size:11px;font-weight:700;color:var(--accent);}
+button.cdr-dl{font-family:var(--mono);border:1px solid var(--line-2);background:var(--panel);border-radius:7px;padding:4px 9px;cursor:pointer;transition:background .14s,color .14s,border-color .14s;}
+button.cdr-dl:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.coa-doc-row[data-doc-view]{cursor:pointer;}
+.coa-link[role=button]{cursor:pointer;}
+.coa-link[role=button]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px;}
 .coa-doc-row.is-empty{opacity:.5;cursor:default;}
 .coa-doc-row.is-empty:hover{border-color:var(--line);transform:none;}
 .coa-doc-row.is-empty .cdr-dl{color:var(--muted);}
@@ -1444,7 +1449,7 @@ function coaLinksHtml(l){
     return `<button type="button" class="coa-docs-btn" data-coa-docs="${esc(l.id)}" title="View the ${files.length} certificates on this sample">${I.doc}${files.length} documents</button>`;
   // a single certificate stays a direct download pill
   if(dl.length===1)
-    return `<a class="coa-link" href="${dl[0].data}" download="${esc(dl[0].name||'coa.pdf')}">${I.doc}<span class="coa-name">${esc(dl[0].name||'Download')}</span></a>`;
+    return `<span class="coa-link" role="button" tabindex="0" data-coa-view="${esc(l.id)}" title="View ${esc(dl[0].name||'CoA')}">${I.doc}<span class="coa-name">${esc(dl[0].name||'Download')}</span></span>`;
   if(l.coaUrl)
     return `<a class="coa-link" href="${esc(l.coaUrl)}" target="_blank" rel="noopener">${I.doc}<span class="coa-name">${esc(l.coaName||'View CoA in SharePoint')}</span></a>`;
   if(files.length===1)
@@ -1453,6 +1458,34 @@ function coaLinksHtml(l){
 }
 function coaRowHtml(l){
   return `${coaLinksHtml(l)||`<span class="lot-tag coa-none-tag"><i>CoA</i>No PDF</span>`}<button type="button" class="coa-add" data-coa-add="${esc(l.id)}" title="Attach more CoA PDFs to this sample">${I.add}Add PDF</button>`;
+}
+/* Chrome blocks top-level navigation to data: URLs and silently drops large
+   data:-URL downloads, so a CoA pill/row pointing at href="data:application/pdf..."
+   does nothing when clicked. Route view + download through a Blob object URL,
+   which is exempt from both restrictions. */
+function dataUrlToBlob(d){
+  const c=d.indexOf(','); if(c<0)return null;
+  const head=d.slice(0,c), body=d.slice(c+1);
+  const mime=(head.match(/data:([^;]+)/)||[])[1]||'application/pdf';
+  if(/;base64/i.test(head)){
+    const bin=atob(body), n=bin.length, arr=new Uint8Array(n);
+    for(let i=0;i<n;i++)arr[i]=bin.charCodeAt(i);
+    return new Blob([arr],{type:mime});
+  }
+  return new Blob([decodeURIComponent(body)],{type:mime});
+}
+function viewPdf(data){
+  if(!data)return; let b; try{b=dataUrlToBlob(data);}catch(_){return;} if(!b)return;
+  const u=URL.createObjectURL(b);
+  window.open(u,'_blank','noopener');
+  setTimeout(()=>{try{URL.revokeObjectURL(u);}catch(_){}},60000);
+}
+function downloadPdf(data,name){
+  if(!data)return; let b; try{b=dataUrlToBlob(data);}catch(_){return;} if(!b)return;
+  const u=URL.createObjectURL(b);
+  const a=document.createElement('a'); a.href=u; a.download=name||'coa.pdf';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>{try{URL.revokeObjectURL(u);}catch(_){}},4000);
 }
 let _coaModalKey=null;
 function closeCoaModal(){ const m=$('#coaModal'); if(m)m.remove(); if(_coaModalKey){document.removeEventListener('keydown',_coaModalKey);_coaModalKey=null;} }
@@ -1463,8 +1496,10 @@ async function openCoaDocs(id){
   const l=LOTS.find(x=>x.id===id); if(!l)return;
   await hydrateLotPdfs(l);   // pull any stripped bytes back from IndexedDB so each row downloads
   const files=coaFilesOf(l);
-  const rows=files.map(f=>f.data
-    ?`<a class="coa-doc-row" href="${f.data}" download="${esc(f.name||'coa.pdf')}">${I.doc}<span class="cdr-name">${esc(f.name||'Download')}</span><span class="cdr-dl">Download</span></a>`
+  // Each row is a button (not an <a href="data:">) — clicking the row views the
+  // PDF in a new tab, the Download button saves it, both via Blob object URLs.
+  const rows=files.map((f,i)=>f.data
+    ?`<div class="coa-doc-row" data-doc-view="${i}" role="button" tabindex="0" title="View ${esc(f.name||'CoA')}">${I.doc}<span class="cdr-name">${esc(f.name||'Download')}</span><button type="button" class="cdr-dl" data-doc-dl="${i}" title="Download">Download</button></div>`
     :`<span class="coa-doc-row is-empty">${I.doc}<span class="cdr-name">${esc(f.name||'CoA')}</span><span class="cdr-dl">No file</span></span>`
   ).join('');
   const urlRow=(l.coaUrl&&!files.some(f=>f.data))?`<a class="coa-doc-row" href="${esc(l.coaUrl)}" target="_blank" rel="noopener">${I.doc}<span class="cdr-name">${esc(l.coaName||'View CoA in SharePoint')}</span><span class="cdr-dl">Open</span></a>`:'';
@@ -1476,7 +1511,18 @@ async function openCoaDocs(id){
       <button type="button" class="coa-modal-x" data-coa-close aria-label="Close">✕</button></div>
     <div class="coa-modal-list">${rows}${urlRow}</div>
   </div>`;
-  wrap.addEventListener('click',e=>{ if(e.target===wrap||e.target.closest('[data-coa-close]'))closeCoaModal(); });
+  wrap.addEventListener('click',e=>{
+    if(e.target===wrap||e.target.closest('[data-coa-close]')){closeCoaModal();return;}
+    const dlBtn=e.target.closest('[data-doc-dl]');
+    if(dlBtn){ e.stopPropagation(); const f=files[+dlBtn.dataset.docDl]; if(f)downloadPdf(f.data,f.name); return; }
+    const viewRow=e.target.closest('[data-doc-view]');
+    if(viewRow){ const f=files[+viewRow.dataset.docView]; if(f)viewPdf(f.data); }
+  });
+  wrap.addEventListener('keydown',e=>{
+    if(e.key!=='Enter'&&e.key!==' ')return;
+    const viewRow=e.target.closest('[data-doc-view]');
+    if(viewRow){ e.preventDefault(); const f=files[+viewRow.dataset.docView]; if(f)viewPdf(f.data); }
+  });
   document.body.appendChild(wrap);
   _coaModalKey=e=>{ if(e.key==='Escape')closeCoaModal(); };
   document.addEventListener('keydown',_coaModalKey);
@@ -1740,6 +1786,8 @@ $('#nav').addEventListener('click',e=>{
 $('#main').addEventListener('click',e=>{
   const docs=e.target.closest('[data-coa-docs]');
   if(docs){openCoaDocs(docs.dataset.coaDocs);return;}
+  const view=e.target.closest('[data-coa-view]');
+  if(view){ const lt=LOTS.find(x=>x.id===view.dataset.coaView); const f=lt&&coaFilesOf(lt).find(x=>x.data); if(f)viewPdf(f.data); return; }
   const dec=e.target.closest('[data-decide]');
   if(dec){e.stopPropagation();decide(dec.dataset.id,dec.dataset.decide);return;}
   const go=e.target.closest('[data-go]');
@@ -1750,6 +1798,11 @@ $('#main').addEventListener('click',e=>{
   if(ph){toggleSupCollapse(ph.dataset.supPanel);return;}
   const row=e.target.closest('[data-lot]');
   if(row){lotFrom=curPage;showPage('lot:'+row.dataset.lot);return;}
+});
+$('#main').addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  const view=e.target.closest('[data-coa-view]');
+  if(view){ e.preventDefault(); const lt=LOTS.find(x=>x.id===view.dataset.coaView); const f=lt&&coaFilesOf(lt).find(x=>x.data); if(f)viewPdf(f.data); }
 });
 function toggleSupCollapse(s){
   const set=new Set(load('coa.collapsedSups',[]));
