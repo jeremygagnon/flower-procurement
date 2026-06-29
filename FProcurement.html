@@ -335,6 +335,23 @@ button.cdr-dl:hover{background:var(--accent);color:#fff;border-color:var(--accen
 .coa-doc-row.is-empty{opacity:.5;cursor:default;}
 .coa-doc-row.is-empty:hover{border-color:var(--line);transform:none;}
 .coa-doc-row.is-empty .cdr-dl{color:var(--muted);}
+.coa-dl{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:9px;padding:8px 13px;cursor:pointer;transition:background .14s,color .14s,transform .14s;}
+.coa-dl:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-1px);}
+.coa-dl svg{width:14px;height:14px;}
+/* In-page PDF viewer — renders the certificate in an iframe overlay so it works
+   inside the embedded preview (and anywhere window.open popups are blocked). */
+.pdf-viewer{position:fixed;inset:0;z-index:220;display:flex;align-items:center;justify-content:center;padding:24px;background:color-mix(in srgb,#000 62%,transparent);backdrop-filter:blur(2px);animation:coaFade .14s ease;}
+.pv-card{width:100%;max-width:980px;height:90vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line-2);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden;}
+.pv-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);}
+.pv-name{display:inline-flex;align-items:center;gap:8px;min-width:0;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink);}
+.pv-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pv-name svg{width:16px;height:16px;color:var(--accent);flex:none;}
+.pv-actions{display:inline-flex;align-items:center;gap:8px;flex:none;}
+.pv-btn{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:8px;padding:6px 11px;cursor:pointer;text-decoration:none;transition:background .14s,color .14s,border-color .14s;}
+.pv-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.pv-x{flex:none;width:30px;height:30px;border-radius:8px;border:1px solid var(--line-2);background:var(--inset);color:var(--ink-2);font-size:14px;cursor:pointer;transition:background .14s,color .14s,border-color .14s;}
+.pv-x:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.pv-frame{flex:1;width:100%;border:0;background:#fff;}
 .coa-replace{margin-left:6px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:13px;vertical-align:middle;transition:color .14s,border-color .14s;}
 .coa-replace:hover{color:var(--accent);border-color:var(--accent);}
 .coa-tip{position:fixed;z-index:200;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.35);padding:10px 12px;min-width:168px;pointer-events:none;font-family:var(--font);}
@@ -481,6 +498,7 @@ const I={
   add:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
   up:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>',
   doc:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  dl:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
   search:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
   cal:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>',
 };
@@ -1639,16 +1657,15 @@ function coaLinksHtml(l){
   if(files.length>=2)
     return `<button type="button" class="coa-docs-btn" data-coa-docs="${esc(l.id)}" title="View the ${files.length} certificates on this sample">${I.doc}${files.length} documents</button>`;
   const f0=files[0];
-  // a single shared certificate opens straight from storage — works on every device
-  if(f0&&f0.url)
-    return `<a class="coa-link" href="${esc(f0.url)}" target="_blank" rel="noopener" title="View ${esc(f0.name||'CoA')}">${I.doc}<span class="coa-name">${esc(f0.name||'Download')}</span></a>`;
-  // a single on-device certificate views via a Blob object URL
-  if(f0&&f0.data)
-    return `<span class="coa-link" role="button" tabindex="0" data-coa-view="${esc(l.id)}" title="View ${esc(f0.name||'CoA')}">${I.doc}<span class="coa-name">${esc(f0.name||'Download')}</span></span>`;
+  // a single certificate: View opens the in-page viewer, Download saves it. Both
+  // route through viewLotCoa/downloadLotCoa, which rehydrate the bytes from
+  // IndexedDB on demand, so the buttons work after a reload even before the
+  // background hydrate finishes (and on every device once the shared url syncs).
+  if(f0)
+    return `<span class="coa-link" role="button" tabindex="0" data-coa-view="${esc(l.id)}" data-coa-idx="0" title="View ${esc(f0.name||'CoA')}">${I.doc}<span class="coa-name">${esc(f0.name||'Certificate')}</span></span>`+
+      `<button type="button" class="coa-dl" data-coa-dl="${esc(l.id)}" data-coa-idx="0" title="Download ${esc(f0.name||'CoA')}">${I.dl||''}Download</button>`;
   if(l.coaUrl)
     return `<a class="coa-link" href="${esc(l.coaUrl)}" target="_blank" rel="noopener">${I.doc}<span class="coa-name">${esc(l.coaName||'View CoA in SharePoint')}</span></a>`;
-  if(files.length===1)
-    return `<span class="coa-link" style="opacity:.55;cursor:default">${I.doc}<span class="coa-name">${esc(files[0].name||'CoA')}</span></span>`;
   return '';
 }
 function coaRowHtml(l){
@@ -1669,12 +1686,6 @@ function dataUrlToBlob(d){
   }
   return new Blob([decodeURIComponent(body)],{type:mime});
 }
-function viewPdf(data){
-  if(!data)return; let b; try{b=dataUrlToBlob(data);}catch(_){return;} if(!b)return;
-  const u=URL.createObjectURL(b);
-  window.open(u,'_blank','noopener');
-  setTimeout(()=>{try{URL.revokeObjectURL(u);}catch(_){}},60000);
-}
 function downloadPdf(data,name){
   if(!data)return; let b; try{b=dataUrlToBlob(data);}catch(_){return;} if(!b)return;
   const u=URL.createObjectURL(b);
@@ -1682,10 +1693,65 @@ function downloadPdf(data,name){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>{try{URL.revokeObjectURL(u);}catch(_){}},4000);
 }
+/* In-page PDF viewer — shows the certificate in an iframe overlay instead of a
+   window.open popup, which the embedded preview iframe (and popup blockers)
+   silently block. Same-origin Blob URLs and public Supabase urls both render. */
+let _pdfViewerKey=null, _pdfViewerUrl=null;
+function closePdfViewer(){
+  const m=$('#pdfViewer'); if(m)m.remove();   // remove the iframe before revoking its src
+  if(_pdfViewerKey){document.removeEventListener('keydown',_pdfViewerKey);_pdfViewerKey=null;}
+  if(_pdfViewerUrl){ try{URL.revokeObjectURL(_pdfViewerUrl);}catch(_){} _pdfViewerUrl=null; }
+}
+function showPdfViewer(src,name,dl,ownUrl){
+  closePdfViewer();
+  _pdfViewerUrl=ownUrl||null;   // set AFTER close so the just-created blob url isn't revoked
+  const wrap=document.createElement('div');
+  wrap.className='pdf-viewer'; wrap.id='pdfViewer';
+  wrap.innerHTML=`<div class="pv-card" role="dialog" aria-modal="true" aria-label="Certificate ${esc(name||'')}">
+    <div class="pv-head"><span class="pv-name">${I.doc}<span>${esc(name||'Certificate')}</span></span>
+      <span class="pv-actions">
+        <a class="pv-btn" href="${esc(dl)}" download="${esc(name||'coa.pdf')}">Download</a>
+        <a class="pv-btn" href="${esc(src)}" target="_blank" rel="noopener">Open in tab</a>
+        <button type="button" class="pv-x" data-pv-close aria-label="Close">✕</button>
+      </span></div>
+    <iframe class="pv-frame" src="${esc(src)}" title="${esc(name||'Certificate')}"></iframe>
+  </div>`;
+  wrap.addEventListener('click',e=>{ if(e.target===wrap||e.target.closest('[data-pv-close]'))closePdfViewer(); });
+  document.body.appendChild(wrap);
+  _pdfViewerKey=e=>{ if(e.key==='Escape')closePdfViewer(); };
+  document.addEventListener('keydown',_pdfViewerKey);
+}
 /* Prefer the shared Supabase Storage url (works on any device, no rehydrate);
    fall back to the on-device bytes via a Blob object URL. */
-function viewCoaFile(f){ if(!f)return; if(f.url){ window.open(f.url,'_blank','noopener'); return; } if(f.data)viewPdf(f.data); }
-function downloadCoaFile(f){ if(!f)return; if(f.url){ const u=f.url+(f.url.indexOf('?')>=0?'&':'?')+'download='+encodeURIComponent(f.name||'coa.pdf'); window.open(u,'_blank','noopener'); return; } if(f.data)downloadPdf(f.data,f.name); }
+function viewCoaFile(f){
+  if(!f)return;
+  if(f.url){ showPdfViewer(f.url,f.name,f.url+(f.url.indexOf('?')>=0?'&':'?')+'download='+encodeURIComponent(f.name||'coa.pdf')); return; }
+  if(f.data){ let b; try{b=dataUrlToBlob(f.data);}catch(_){} if(b){ const u=URL.createObjectURL(b); showPdfViewer(u,f.name,u,u); } }
+}
+function downloadCoaFile(f){
+  if(!f)return;
+  if(f.url){ const u=f.url+(f.url.indexOf('?')>=0?'&':'?')+'download='+encodeURIComponent(f.name||'coa.pdf');
+    const a=document.createElement('a'); a.href=u; a.download=f.name||'coa.pdf'; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove(); return; }
+  if(f.data)downloadPdf(f.data,f.name);
+}
+/* View/download a lot's certificate by index, rehydrating bytes from IndexedDB
+   first if they were stripped (after a reload) — so the actions work even before
+   wireLot's background hydrate finishes, and degrade with a clear message when
+   the file only lives on another device. */
+async function viewLotCoa(id,idx){
+  const l=LOTS.find(x=>String(x.id)===String(id)); if(!l)return;
+  let f=coaFilesOf(l)[idx||0];
+  if(f&&!f.url&&!f.data){ await hydrateLotPdfs(l); f=coaFilesOf(l)[idx||0]; }
+  if(f&&(f.url||f.data)){ viewCoaFile(f); return; }
+  toast('This certificate’s file isn’t on this device — open it where it was uploaded, or re-attach the PDF.');
+}
+async function downloadLotCoa(id,idx){
+  const l=LOTS.find(x=>String(x.id)===String(id)); if(!l)return;
+  let f=coaFilesOf(l)[idx||0];
+  if(f&&!f.url&&!f.data){ await hydrateLotPdfs(l); f=coaFilesOf(l)[idx||0]; }
+  if(f&&(f.url||f.data)){ downloadCoaFile(f); return; }
+  toast('This certificate’s file isn’t on this device — open it where it was uploaded, or re-attach the PDF.');
+}
 let _coaModalKey=null;
 function closeCoaModal(){ const m=$('#coaModal'); if(m)m.remove(); if(_coaModalKey){document.removeEventListener('keydown',_coaModalKey);_coaModalKey=null;} }
 /* Chooser window for a sample's certificates: one row per attached PDF, each a
@@ -1995,8 +2061,10 @@ $('#main').addEventListener('click',e=>{
   if(del){e.stopPropagation();deleteLot(del.dataset.delLot);return;}
   const docs=e.target.closest('[data-coa-docs]');
   if(docs){openCoaDocs(docs.dataset.coaDocs);return;}
+  const dl=e.target.closest('[data-coa-dl]');
+  if(dl){ e.stopPropagation(); downloadLotCoa(dl.dataset.coaDl,+dl.dataset.coaIdx||0); return; }
   const view=e.target.closest('[data-coa-view]');
-  if(view){ const lt=LOTS.find(x=>x.id===view.dataset.coaView); const f=lt&&coaFilesOf(lt).find(x=>x.url||x.data); if(f)viewCoaFile(f); return; }
+  if(view){ viewLotCoa(view.dataset.coaView,+view.dataset.coaIdx||0); return; }
   const dec=e.target.closest('[data-decide]');
   if(dec){e.stopPropagation();decide(dec.dataset.id,dec.dataset.decide);return;}
   const go=e.target.closest('[data-go]');
@@ -2011,7 +2079,7 @@ $('#main').addEventListener('click',e=>{
 $('#main').addEventListener('keydown',e=>{
   if(e.key!=='Enter'&&e.key!==' ')return;
   const view=e.target.closest('[data-coa-view]');
-  if(view){ e.preventDefault(); const lt=LOTS.find(x=>x.id===view.dataset.coaView); const f=lt&&coaFilesOf(lt).find(x=>x.url||x.data); if(f)viewCoaFile(f); }
+  if(view){ e.preventDefault(); viewLotCoa(view.dataset.coaView,+view.dataset.coaIdx||0); }
 });
 function toggleSupCollapse(s){
   const set=new Set(load('coa.collapsedSups',[]));
